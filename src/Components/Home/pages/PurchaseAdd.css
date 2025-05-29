@@ -1,0 +1,476 @@
+/* src/components/Home/pages/PurchaseAdd.css */
+
+/* --- Global Page Layout (These styles can be shared if consistent across pages) --- */
+.detail-page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.detail-page-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.detail-page-main-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333333;
+  margin: 0;
+}
+
+.detail-header-actions .views-btn {
+  background-color: transparent;
+  border: 1px solid #007bff;
+  color: #007bff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+}
+.detail-header-actions .views-btn svg path {
+  stroke: #007bff;
+}
+
+/* --- PO Header Form Specific Styles --- */
+.record-entry-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 24px;
+  padding-left: 50px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.entry-header-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.entry-header-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.entry-header-field label {
+  font-size: 0.875rem;
+  color: #555555;
+  font-weight: normal;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  min-width: 120px;
+  text-align: left;
+}
+
+.record-entry-header .form-input-styled {
+  /* Styles for inputs within the PO header */
+  width: 100%;
+  max-width: 400px;
+  min-width: 200px;
+  flex-grow: 1;
+}
+
+/* File Input Styling (can be generic if used elsewhere in this style) */
+.file-input-container {
+  align-items: flex-start;
+}
+.form-input-file-hidden {
+  display: none;
+}
+.browse-files-btn {
+  padding: 4px 10px;
+  font-size: 13px;
+  color: #333;
+  background-color: #f8f9fa;
+  border: 1px solid #ccc;
+  border-radius: 0.19rem;
+  cursor: pointer;
+  height: 27px;
+  box-sizing: border-box;
+  line-height: 1.5;
+  margin-right: 8px;
+}
+.browse-files-btn:hover {
+  background-color: #e9ecef;
+}
+.file-name-display {
+  font-size: 0.875rem;
+  color: #555;
+  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* --- Main Content Area (Shared if consistent) --- */
+.detail-form-content-area {
+  flex-grow: 1;
+  padding: 20px 24px;
+  padding-left: 50px; /* Consistent with header padding */
+  background-color: #ffffff; /* White background for this section */
+  overflow-y: auto; /* Scroll if content exceeds height */
+  margin-bottom: 10px; /* Space before footer */
+}
+
+/* Shared form section title style */
+.form-section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333333;
+  margin: 0;
+  padding-bottom: 8px;
+}
+
+/* --- Purchase Order Items Table Section Specific Styles --- */
+.purchase-order-items-section {
+  /* This is the main wrapper for PO item table specific styles */
+  width: 100%;
+}
+
+.purchase-order-items-section .product-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.purchase-order-items-section .add-item-btn {
+  /* Uses .footer-btn and .primary styles for consistency */
+}
+
+.purchase-order-items-section .table-responsive-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.purchase-order-items-section .po-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  background-color: #ffffff; /* Table itself also white */
+}
+
+.purchase-order-items-section .po-items-table th,
+.purchase-order-items-section .po-items-table td {
+  border: 1px solid #e0e0e0;
+  padding: 2px; /* Reduced padding for input cells */
+  text-align: left;
+  vertical-align: middle;
+  position: relative; /* For absolute positioning of lookup indicators */
+}
+
+.purchase-order-items-section .po-items-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+  padding: 8px 6px; /* Original padding for header */
+}
+
+.purchase-order-items-section .po-items-table tbody tr:hover .editable-cell {
+  background-color: #f9f9f9;
+}
+
+.purchase-order-items-section .po-items-table .total-cell {
+  padding: 8px 6px;
+  text-align: right;
+  min-width: 80px;
+}
+
+.purchase-order-items-section .po-items-table .editable-cell {
+  /* No extra padding, input will fill it */
+}
+
+.purchase-order-items-section .po-table-input {
+  width: 100%;
+  height: 100%;
+  padding: 6px;
+  border: none;
+  background-color: transparent;
+  font-size: 0.875rem;
+  box-sizing: border-box;
+  outline: none;
+}
+.purchase-order-items-section .po-table-input:focus {
+  background-color: #eef6ff;
+}
+
+.purchase-order-items-section .po-quantity-input,
+.purchase-order-items-section .po-price-input,
+.purchase-order-items-section .po-tax-input,
+.purchase-order-items-section .po-uom-input {
+  text-align: right;
+}
+.purchase-order-items-section .po-uom-input {
+  max-width: 70px;
+}
+.purchase-order-items-section .po-quantity-input {
+  max-width: 80px;
+}
+.purchase-order-items-section .po-price-input {
+  max-width: 100px;
+}
+.purchase-order-items-section .po-tax-input {
+  max-width: 90px;
+}
+
+.purchase-order-items-section .po-lookup-indicator {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  color: #555;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  line-height: 1;
+  z-index: 10; /* Ensure it's above the input field */
+}
+.purchase-order-items-section .po-lookup-indicator:hover {
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.lookup-indicator-icon {
+  display: inline-block;
+}
+
+/* --- Base Input Styling (These can be shared if input fields look the same everywhere) --- */
+.form-input-styled,
+.form-select-styled,
+.form-textarea-styled {
+  /* Base styles for form inputs in the header */
+  padding: 4px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #ccc;
+  border-radius: 0.19rem;
+  border-bottom-color: #0a0a0a;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  height: 27px;
+  box-sizing: border-box;
+}
+.form-input-styled::placeholder,
+.form-textarea-styled::placeholder {
+  color: #777;
+  opacity: 1;
+}
+.form-input-styled:focus,
+.form-select-styled:focus,
+.form-textarea-styled:focus {
+  color: #000;
+  background-color: #fff;
+  border-color: #333;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
+}
+.form-select-styled {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23333333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  padding-right: 2.5rem;
+}
+
+/* --- Footer Styles (Shared if footer is consistent) --- */
+.detail-page-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
+  border-top: 1px solid #d9d9d9;
+  background-color: #f8f9fa;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 100;
+  flex-shrink: 0;
+}
+.footer-actions-main {
+  display: flex;
+  gap: 10px;
+}
+.footer-btn {
+  padding: 7px 15px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.5;
+}
+.footer-btn.primary {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+.footer-btn.primary:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+.footer-btn.link {
+  background-color: transparent;
+  color: #555;
+  border: none;
+}
+.footer-btn.link:hover {
+  color: #000;
+  text-decoration: underline;
+}
+
+/* --- Responsive Adjustments (These can be shared or page-specific) --- */
+@media (max-width: 992px) {
+  .record-entry-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+    padding-left: 24px;
+  }
+  .record-entry-header .form-input-styled {
+    max-width: none;
+  } /* Allow full width in stacked column */
+}
+
+@media (max-width: 768px) {
+  .detail-page-header-bar,
+  .record-entry-header,
+  .detail-form-content-area,
+  .detail-page-footer {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  .entry-header-field {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .entry-header-field label {
+    min-width: auto;
+    margin-bottom: 5px;
+  }
+  .record-entry-header .form-input-styled {
+    width: 100%;
+  } /* Inputs in header take full width */
+
+  .purchase-order-items-section .product-details-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .file-input-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .browse-files-btn {
+    margin-bottom: 5px;
+  }
+  .file-name-display {
+    max-width: 100%;
+  }
+}
+
+/* PurchaseAdd.css */
+
+/* ... your existing styles ... */
+
+.purchase-order-items-section {
+  /* Add or ensure this if you want the tax-summary-container
+     to align itself within this parent.
+     Alternatively, tax-summary-container can manage its own alignment.
+  */
+}
+
+.table-responsive-container {
+  margin-bottom: 20px; /* Add some space between the table and the summary */
+}
+
+.tax-summary-container {
+  display: flex; /* Lays out summary items in a row */
+  justify-content: flex-end; /* Pushes all summary items to the right */
+  align-items: center; /* Vertically aligns items in the middle */
+  margin-top: 15px; /* Space above the summary section */
+  padding-right: 10px; /* Optional: Aligns nicely with table content if table has padding */
+  width: 100%; /* Ensures it takes full width to allow justify-content to work */
+  box-sizing: border-box;
+}
+
+.summary-item {
+  display: flex; /* Lays out label and input in a row */
+  align-items: center; /* Vertically aligns label and input */
+  margin-left: 25px; /* Space between each summary group (e.g., "Qty Total" and "Tax Total") */
+}
+
+/* Optional: If you want no left margin on the very first item when it's pushed right */
+.summary-item:first-child {
+  /* If justify-content: flex-end is used on parent, this might not be strictly needed,
+     but can be useful if you have other items or change justification.
+     Adjust as per visual requirement. */
+  /* margin-left: 0; */
+}
+
+.summary-label {
+  margin-right: 8px; /* Space between label and its input */
+  font-weight: 500; /* Makes labels a bit more prominent */
+  white-space: nowrap; /* Prevents label text from wrapping */
+  font-size: 0.9em; /* Adjust as needed */
+}
+
+.summary-input {
+  width: 100px; /* Adjust width as needed */
+  padding: 6px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9em; /* Adjust as needed */
+  box-sizing: border-box;
+}
+
+.summary-input:read-only {
+  background-color: #e9ecef; /* Visual cue for read-only fields */
+  cursor: not-allowed;
+}
+
+/* Ensure your table cells also have appropriate styling if they don't already */
+.po-items-table th,
+.po-items-table td {
+  padding: 8px 10px; /* Example padding, adjust as needed */
+  text-align: left;
+}
+
+.po-items-table .total-cell {
+  text-align: right; /* Often totals in tables are right-aligned */
+}

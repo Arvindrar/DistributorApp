@@ -1,0 +1,271 @@
+/* src/components/Home/pages/ProductsAdd.css - Scoped for Product Add Page */
+
+.pa-page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 50px); /* Assuming 50px for a global header if any */
+  background-color: #f0f2f5;
+}
+
+.pa-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px; /* Reduced padding for a slimmer header */
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.pa-main-title {
+  font-size: 1.25rem; /* Reduced font size for "New Product" title to match screenshot */
+  font-weight: 600;
+  color: #333333;
+  margin: 0;
+}
+
+.pa-form-content-area {
+  flex-grow: 1;
+  padding: 20px 30px; /* Reduced padding to match screenshot's tighter feel */
+  background-color: #ffffff;
+}
+
+.pa-form-grid {
+  display: grid;
+  /* We need to define columns more explicitly to manage space */
+  /* Option 1: Fixed width for label column, remaining for input column
+  grid-template-columns: auto 1fr auto 1fr; /* Label Input Label Input */
+  /* Option 2: Define proportions, which might be more flexible */
+  grid-template-columns: repeat(
+    2,
+    minmax(0, 1fr)
+  ); /* Two equal columns by default */
+  column-gap: 60px; /* INCREASED column gap significantly */
+  row-gap: 15px; /* Existing row gap */
+  max-width: none; /* Allow the grid to take more space if needed or set a larger max-width */
+  /* Example: max-width: 1200px; */
+}
+
+.pa-form-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* This is the gap between field groups within a column */
+}
+
+.pa-field-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  /* gap: 10px; /* Gap between label and input is handled by label width + input properties */
+}
+
+.pa-field-group label {
+  font-size: 0.875rem;
+  color: #555555;
+  font-weight: normal;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  width: 120px; /* FIXED width for labels to align inputs nicely */
+  /* min-width: 120px; /* Previous value */
+  text-align: left; /* As per screenshot */
+  margin-right: 10px; /* Explicit space between label and input */
+}
+
+.pa-input,
+.pa-select,
+.pa-textarea {
+  padding: 4px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #ccc;
+  border-radius: 0.19rem;
+  border-bottom-color: #0a0a0a;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  /* width: 400px; /* This was too large and caused overflow/overlap */
+  /* min-width: 400px; */
+  width: 100%; /* Make input take available space within its parent .pa-form-column cell AFTER label */
+  min-width: 400px; /* Set a max-width to prevent it from becoming too wide if column is wide */
+  flex-grow: 1; /* Allow input to grow if its parent .pa-field-group is a flex container */
+  height: 27px;
+  box-sizing: border-box;
+}
+
+.pa-textarea {
+  height: auto;
+  min-height: calc(27px * 2 + 10px);
+  resize: vertical;
+}
+
+.pa-input:focus,
+.pa-select:focus,
+.pa-textarea:focus {
+  color: #000;
+  background-color: #fff;
+  border-color: #333;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
+}
+
+.pa-file-input-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%; /* Make wrapper take full width to contain input and button */
+  /* gap: 10px; /* Gap handled by margins or flex properties */
+}
+.pa-file-input-wrapper .pa-input {
+  /* Text display for filename */
+  flex-grow: 1; /* Text input takes available space */
+  max-width: calc(
+    100% - 110px
+  ); /* Max width considering the button width + gap */
+  margin-right: 10px;
+}
+
+.pa-browse-button {
+  padding: 0 10px; /* Adjusted padding */
+  font-size: 13px;
+  font-weight: normal;
+  color: #333;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 0.19rem; /* Match input radius */
+  cursor: pointer;
+  height: 27px;
+  line-height: calc(27px - 2px); /* Adjust for border */
+  white-space: nowrap;
+  transition: background-color 0.2s, border-color 0.2s;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  min-width: 100px; /* Give button a decent minimum width */
+}
+.pa-browse-button:hover {
+  background-color: #e9ecef;
+}
+
+.pa-hidden-file-input {
+  display: none;
+}
+
+.pa-footer {
+  display: flex;
+  justify-content: space-between; /* To push cancel to the very right */
+  align-items: center;
+  padding: 15px 30px; /* Match content area padding */
+  border-top: 1px solid #e0e0e0;
+  background-color: #ffffff;
+  margin-top: 0; /* REMOVED margin-top to make it joined */
+  /* The form content area should have enough padding or margin at its bottom
+     if you need space between the last form field and the footer */
+}
+
+.pa-footer-actions-main {
+  display: flex; /* This is for the primary "Add Product" button */
+}
+
+.pa-btn {
+  padding: 7px 15px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  line-height: 1.5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pa-btn.primary {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+.pa-btn.primary:hover {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.pa-btn.link {
+  background-color: transparent;
+  color: #555;
+  border: none;
+  text-decoration: none;
+  /* margin-left: auto; /* This is handled by justify-content: space-between on .pa-footer */
+}
+.pa-btn.link:hover {
+  color: #000;
+  text-decoration: underline;
+}
+
+/* Add padding to the bottom of the form content if footer is directly joined */
+.pa-form-content-area {
+  padding-bottom: 30px; /* Ensure space before the footer if margin-top on footer is 0 */
+}
+
+@media (max-width: 992px) {
+  /* Adjusted breakpoint for two columns */
+  .pa-form-grid {
+    grid-template-columns: 1fr; /* Single column on smaller screens */
+    column-gap: 20px; /* Reduce gap for single column */
+  }
+  .pa-input {
+    max-width: 100%; /* Allow inputs to take full width in single column */
+  }
+  .pa-file-input-wrapper .pa-input {
+    max-width: calc(100% - 110px); /* Re-evaluate for single column if needed */
+  }
+}
+
+@media (max-width: 768px) {
+  .pa-header-bar {
+    padding: 10px 15px;
+  }
+  .pa-main-title {
+    font-size: 1.1rem;
+  }
+  .pa-form-content-area {
+    padding: 15px;
+  }
+  .pa-field-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .pa-field-group label {
+    width: auto; /* Labels take natural width */
+    min-width: auto;
+    margin-bottom: 5px;
+    margin-right: 0;
+  }
+  .pa-input,
+  .pa-select,
+  .pa-textarea {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%; /* Ensure full width on mobile */
+  }
+  .pa-file-input-wrapper {
+    flex-direction: column; /* Stack filename display and button */
+    align-items: stretch;
+  }
+  .pa-file-input-wrapper .pa-input {
+    max-width: 100%;
+    margin-right: 0;
+    margin-bottom: 5px;
+  }
+  .pa-browse-button {
+    width: 100%; /* Full width button on mobile */
+  }
+  .pa-footer {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+    padding: 10px 15px;
+  }
+  .pa-btn.link {
+    margin-left: 0;
+    text-align: center;
+  }
+}
