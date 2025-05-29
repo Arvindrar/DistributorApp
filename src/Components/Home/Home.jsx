@@ -37,8 +37,8 @@ import GRPO from "./pages/GRPO";
 import GRPOadd from "./pages/GRPOadd";
 // Placeholder for pages you might need for other submenu items
 import OutgoingPayment from "./pages/OutgoingPayment";
-// import RoutePage from './pages/RoutePage';
-// import SalesEmployeePage from './pages/SalesEmployeePage';
+import SalesEmployee from "./pages/SalesEmployee";
+import Routess from "./pages/Routess";
 
 function Home() {
   const location = useLocation();
@@ -82,7 +82,7 @@ function Home() {
     } else if (
       path.startsWith("/customerrelationshipmgmt") ||
       path.startsWith("/customergroup") ||
-      path.startsWith("/route") || // Assuming this path exists
+      path.startsWith("/routess") || // Assuming this path exists
       path.startsWith("/salesemployee") || // Assuming this path exists
       path.startsWith("/customers") // Catches /customers, /customers/add
     ) {
@@ -125,7 +125,7 @@ function Home() {
     if (pageName === "Customer Relationship Mgmt")
       pathSegment = "customerrelationshipmgmt";
     if (pageName === "Customer Group") pathSegment = "customergroup";
-    if (pageName === "Route") pathSegment = "route"; // Ensure you have a route for '/route'
+    if (pageName === "Routess") pathSegment = "routess"; // Ensure you have a route for '/route'
     if (pageName === "Sales Employee") pathSegment = "salesemployee"; // Ensure you have a route for '/salesemployee'
     if (pageName === "Product Details") pathSegment = "productdetails";
     if (pageName === "Products Group") pathSegment = "productsgroup";
@@ -161,8 +161,8 @@ function Home() {
           />
           <Route path="/customergroup" element={<CustomerGroup />} />
           {/* Add routes for RoutePage and SalesEmployeePage if they exist */}
-          {/* <Route path="/route" element={<RoutePage />} /> */}
-          {/* <Route path="/salesemployee" element={<SalesEmployeePage />} /> */}
+          <Route path="/routess" element={<Routess />} />
+          <Route path="/salesemployee" element={<SalesEmployee />} />
           {/* Product Routes */}
           <Route path="/products" element={<Products />} />
           <Route path="/products/add" element={<ProductsAdd />} />
