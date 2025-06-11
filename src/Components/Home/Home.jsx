@@ -39,6 +39,11 @@ import GRPOadd from "./pages/GRPOadd";
 import OutgoingPayment from "./pages/OutgoingPayment";
 import SalesEmployee from "./pages/SalesEmployee";
 import Routess from "./pages/Routess";
+import UpdateCustomers from "./UpdateCustomers";
+import ProductsUpdate from "./pages/ProductsUpdate";
+import ShippingType from "./pages/ShippingType";
+import UOM from "./pages/UOM";
+import UOMGroup from "./pages/UOMGroup";
 
 function Home() {
   const location = useLocation();
@@ -84,12 +89,15 @@ function Home() {
       path.startsWith("/customergroup") ||
       path.startsWith("/routess") || // Assuming this path exists
       path.startsWith("/salesemployee") || // Assuming this path exists
+      path.startsWith("/shippingtype") ||
       path.startsWith("/customers") // Catches /customers, /customers/add
     ) {
       currentNavItem = "Customers";
     } else if (
       path.startsWith("/productdetails") ||
       path.startsWith("/productsgroup") ||
+      path.startsWith("/uom") ||
+      path.startsWith("/uomgroup") ||
       path.startsWith("/products") // Catches /products, /products/add
     ) {
       currentNavItem = "Products";
@@ -125,8 +133,11 @@ function Home() {
     if (pageName === "Customer Relationship Mgmt")
       pathSegment = "customerrelationshipmgmt";
     if (pageName === "Customer Group") pathSegment = "customergroup";
+    if (pageName === "UOM") pathSegment = "uom";
+    if (pageName === "UOM Group") pathSegment = "uomgroup";
     if (pageName === "Routess") pathSegment = "routess"; // Ensure you have a route for '/route'
     if (pageName === "Sales Employee") pathSegment = "salesemployee"; // Ensure you have a route for '/salesemployee'
+    if (pageName === "Shipping Type") pathSegment = "shippingtype";
     if (pageName === "Product Details") pathSegment = "productdetails";
     if (pageName === "Products Group") pathSegment = "productsgroup";
     if (pageName === "GRPO") pathSegment = "grpo";
@@ -156,6 +167,10 @@ function Home() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/add" element={<AddCustomers />} />
           <Route
+            path="/customers/update/:customerId"
+            element={<UpdateCustomers />}
+          />
+          <Route
             path="/customerrelationshipmgmt"
             element={<CustomerRelationshipMgmt />}
           />
@@ -163,11 +178,19 @@ function Home() {
           {/* Add routes for RoutePage and SalesEmployeePage if they exist */}
           <Route path="/routess" element={<Routess />} />
           <Route path="/salesemployee" element={<SalesEmployee />} />
+          <Route path="/shippingtype" element={<ShippingType />} />
+          {/* Assuming Routess handles Shipping Type */}
           {/* Product Routes */}
           <Route path="/products" element={<Products />} />
           <Route path="/products/add" element={<ProductsAdd />} />
           <Route path="/productdetails" element={<Products />} />
+          <Route
+            path="/products/update/:productId"
+            element={<ProductsUpdate />}
+          />
           <Route path="/productsgroup" element={<ProductsGroup />} />
+          <Route path="/uom" element={<UOM />} />
+          <Route path="/uomgroup" element={<UOMGroup />} />
           {/* Purchase Routes */}
           <Route path="/purchaseorder" element={<Purchase />} />
           <Route path="/purchaseorder/add" element={<PurchaseAdd />} />

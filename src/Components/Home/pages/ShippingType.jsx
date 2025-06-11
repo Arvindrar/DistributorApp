@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import "./SalesEmployee.css"; // We'll create this CSS file next
+import "./ShippingType.css"; // We'll create this CSS file next
 
 const API_BASE_URL = "https://localhost:7074/api"; // Your API's base URL
 
@@ -7,12 +7,12 @@ const API_BASE_URL = "https://localhost:7074/api"; // Your API's base URL
 const MessageModal = ({ message, onClose, type = "success", isActive }) => {
   if (!isActive || !message) return null;
   return (
-    <div className="se-modal-overlay">
+    <div className="st-modal-overlay">
       {" "}
-      {/* se for SalesEmployee */}
-      <div className={`se-modal-content ${type}`}>
+      {/* st for ShippingType */}
+      <div className={`st-modal-content ${type}`}>
         <p>{message}</p>
-        <button onClick={onClose} className="se-modal-close-button">
+        <button onClick={onClose} className="st-modal-close-button">
           OK
         </button>
       </div>
@@ -20,9 +20,9 @@ const MessageModal = ({ message, onClose, type = "success", isActive }) => {
   );
 };
 
-const SalesEmployee = () => {
-  const [salesEmployees, setSalesEmployees] = useState([]);
-  const [newEmployeeName, setNewEmployeeName] = useState(""); // Storing the name of the new employee
+const ShippingType = () => {
+  const [shippingTypes, setShippingTypes] = useState([]);
+  const [newShippingTypeName, setNewShippingTypeName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,13 +40,13 @@ const SalesEmployee = () => {
     setModalState({ message: "", type: "info", isActive: false });
   };
 
-  const fetchSalesEmployees = useCallback(async () => {
+  const fetchShippingTypes = useCallback(async () => {
     setIsLoading(true);
     try {
-      // *** IMPORTANT: Verify this API endpoint for fetching sales employees ***
-      const response = await fetch(`${API_BASE_URL}/SalesEmployee`);
+      // *** IMPORTANT: Verify this API endpoint for fetching shipping types ***
+      const response = await fetch(`${API_BASE_URL}/ShippingType`);
       if (!response.ok) {
-        let errorMsg = `Error fetching sales employees: ${response.status} ${response.statusText}`;
+        let errorMsg = `Error fetching shipping types: ${response.status} ${response.statusText}`;
         try {
           const errorData = await response.json();
           errorMsg =
@@ -61,44 +61,44 @@ const SalesEmployee = () => {
         throw new Error(errorMsg);
       }
       const data = await response.json();
-      setSalesEmployees(data);
+      setShippingTypes(data);
     } catch (e) {
-      console.error("Failed to fetch sales employees:", e);
+      console.error("Failed to fetch shipping types:", e);
       showModal(
-        e.message || "Failed to load sales employees. Please try refreshing.",
+        e.message || "Failed to load shipping types. Please try refreshing.",
         "error"
       );
     } finally {
       setIsLoading(false);
     }
-  }, []); // Removed showModal from dependencies
+  }, []);
 
   useEffect(() => {
-    fetchSalesEmployees();
-  }, [fetchSalesEmployees]);
+    fetchShippingTypes();
+  }, [fetchShippingTypes]);
 
-  const handleAddSalesEmployee = async () => {
-    if (newEmployeeName.trim() === "") {
-      showModal("Sales Employee name cannot be empty.", "error");
+  const handleAddShippingType = async () => {
+    if (newShippingTypeName.trim() === "") {
+      showModal("Shipping Type name cannot be empty.", "error");
       return;
     }
 
     setIsSubmitting(true);
     closeModal();
 
-    const employeeData = {
-      name: newEmployeeName.trim(),
-      // Add other properties if your SalesEmployee object needs them (e.g., employeeId, department)
+    const shippingTypeData = {
+      name: newShippingTypeName.trim(),
+      // Add other properties if your ShippingType object needs them
     };
 
     try {
-      // *** IMPORTANT: Verify this API endpoint for creating a sales employee ***
-      const response = await fetch(`${API_BASE_URL}/SalesEmployee`, {
+      // *** IMPORTANT: Verify this API endpoint for creating a shipping type ***
+      const response = await fetch(`${API_BASE_URL}/ShippingType`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(employeeData),
+        body: JSON.stringify(shippingTypeData),
       });
 
       if (!response.ok) {
@@ -107,7 +107,6 @@ const SalesEmployee = () => {
           const errorData = await response.json();
           if (errorData) {
             if (response.status === 400 || response.status === 409) {
-              // Conflict or Bad Request
               const nameErrorArray = errorData.Name || errorData.name;
               const title = errorData.title?.toLowerCase();
               const detail = errorData.detail?.toLowerCase();
@@ -130,9 +129,8 @@ const SalesEmployee = () => {
                 (errorDataStr && errorDataStr.includes("already exist"))
               ) {
                 apiErrorMessage =
-                  "Sales Employee with this name already exists!";
+                  "Shipping Type with this name already exists!";
               } else {
-                // Other 400/409 errors
                 if (nameErrorArray && Array.isArray(nameErrorArray)) {
                   apiErrorMessage = nameErrorArray.join(" ");
                 } else if (errorData.title) {
@@ -149,7 +147,6 @@ const SalesEmployee = () => {
                 }
               }
             } else {
-              // Other error statuses
               const nameErrorArray = errorData.Name || errorData.name;
               if (nameErrorArray && Array.isArray(nameErrorArray)) {
                 apiErrorMessage = nameErrorArray.join(" ");
@@ -173,13 +170,13 @@ const SalesEmployee = () => {
         throw new Error(apiErrorMessage);
       }
 
-      showModal("Sales Employee added successfully!", "success");
-      setNewEmployeeName("");
-      fetchSalesEmployees(); // Refresh the list
+      showModal("Shipping Type added successfully!", "success");
+      setNewShippingTypeName("");
+      fetchShippingTypes(); // Refresh the list
     } catch (e) {
-      console.error("Failed to add sales employee:", e);
+      console.error("Failed to add shipping type:", e);
       showModal(
-        e.message || "Failed to add sales employee. Please try again.",
+        e.message || "Failed to add shipping type. Please try again.",
         "error"
       );
     } finally {
@@ -188,54 +185,48 @@ const SalesEmployee = () => {
   };
 
   return (
-    <div className="se-page-content">
+    <div className="st-page-content">
       {" "}
-      {/* se for SalesEmployee */}
+      {/* st for ShippingType */}
       <MessageModal
         message={modalState.message}
         onClose={closeModal}
         type={modalState.type}
         isActive={modalState.isActive}
       />
-      <h1 className="se-main-title">Sales Employee Management</h1>
+      <h1 className="st-main-title">Shipping Type Management</h1>
       {/* Table Section */}
       <div className="table-responsive-container">
         <table className="data-table">
           <thead>
             <tr>
-              <th className="se-th-serial">Serial No.</th>
-              <th className="se-th-employeename">Employee Name</th>
-              {/* Add more <th> if your SalesEmployee object has more displayable fields */}
+              <th className="st-th-serial">Serial No.</th>
+              <th className="st-th-typename">Shipping Type Name</th>
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan="2" className="se-loading-cell">
-                  {" "}
-                  {/* Adjust colSpan if more columns */}
-                  Loading sales employees...
+                <td colSpan="2" className="st-loading-cell">
+                  Loading shipping types...
                 </td>
               </tr>
             )}
             {!isLoading &&
-              salesEmployees.map((employee, index) => (
-                <tr key={employee.id || index}>
+              shippingTypes.map((type, index) => (
+                <tr key={type.id || index}>
                   {" "}
-                  {/* Prefer backend ID if available */}
-                  <td className="se-td-serial">{index + 1}</td>
-                  <td>{employee.name}</td> {/* Assuming 'name' property */}
-                  {/* Add more <td> for other properties of the employee object */}
+                  {/* Prefer backend ID */}
+                  <td className="st-td-serial">{index + 1}</td>
+                  <td>{type.name}</td> {/* Assuming 'name' property */}
                 </tr>
               ))}
             {!isLoading &&
-              salesEmployees.length === 0 &&
-              !modalState.isActive && ( // Don't show "No data" if a modal is active (e.g., error modal)
+              shippingTypes.length === 0 &&
+              !modalState.isActive && (
                 <tr>
                   <td colSpan="2" className="no-data-cell">
-                    {" "}
-                    {/* Adjust colSpan if more columns */}
-                    No sales employees found.
+                    No shipping types found.
                   </td>
                 </tr>
               )}
@@ -243,33 +234,33 @@ const SalesEmployee = () => {
         </table>
       </div>
       {/* Create Section */}
-      <div className="se-create-section">
-        <h3 className="se-create-title">Add New Sales Employee</h3>
-        <div className="se-form-row">
-          <label htmlFor="employeeNameInput" className="se-label">
-            Employee Name :
+      <div className="st-create-section">
+        <h3 className="st-create-title">Add New Shipping Type</h3>
+        <div className="st-form-row">
+          <label htmlFor="shippingTypeNameInput" className="st-label">
+            Shipping Type Name :
           </label>
           <input
             type="text"
-            id="employeeNameInput"
-            className="se-input"
-            value={newEmployeeName}
-            onChange={(e) => setNewEmployeeName(e.target.value)}
-            placeholder="Enter employee name"
+            id="shippingTypeNameInput"
+            className="st-input"
+            value={newShippingTypeName}
+            onChange={(e) => setNewShippingTypeName(e.target.value)}
+            placeholder="Enter shipping type name"
             disabled={isSubmitting || isLoading}
           />
         </div>
         <button
           type="button"
-          className="se-add-button"
-          onClick={handleAddSalesEmployee}
+          className="st-add-button"
+          onClick={handleAddShippingType}
           disabled={isSubmitting || isLoading}
         >
-          {isSubmitting ? "Adding..." : "Add Employee"}
+          {isSubmitting ? "Adding..." : "Add Type"}
         </button>
       </div>
     </div>
   );
 };
 
-export default SalesEmployee;
+export default ShippingType;

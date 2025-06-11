@@ -270,6 +270,12 @@ const Sidebar = ({ navItems, activePage, onPageChange }) => {
                     >
                       Sales Employee
                     </li>
+                    <li
+                      className="submenu-item"
+                      onClick={() => onPageChange("Shipping Type")}
+                    >
+                      Shipping Type
+                    </li>
                   </div>
                 )}
               </React.Fragment>
@@ -304,6 +310,18 @@ const Sidebar = ({ navItems, activePage, onPageChange }) => {
                       onClick={() => onPageChange("Products Group")}
                     >
                       Products Group
+                    </li>
+                    <li
+                      className="submenu-item"
+                      onClick={() => onPageChange("UOM")}
+                    >
+                      UOM
+                    </li>
+                    <li
+                      className="submenu-item"
+                      onClick={() => onPageChange("UOM Group")}
+                    >
+                      UOM Group
                     </li>
                   </div>
                 )}

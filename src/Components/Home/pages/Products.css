@@ -32,6 +32,7 @@
   align-items: center;
   /* flex-grow: 1; /* Consider if items should grow or have fixed widths */
   /* flex-shrink: 0; /* Consider if items should shrink */
+  flex-wrap: wrap;
 }
 
 .products-overview__filter-label {
@@ -172,7 +173,7 @@
 .products-overview__card-image {
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .products-overview__card-details {
@@ -196,6 +197,19 @@
   display: inline-block;
 }
 
+/* --- NEW STYLES for the Product Code Link --- */
+.products-overview__product-code-link {
+  color: #007bff; /* Standard link blue, or your theme's link color */
+  text-decoration: none; /* Remove underline by default */
+  font-weight: 500; /* Slightly bolder if desired */
+}
+
+.products-overview__product-code-link:hover {
+  text-decoration: underline; /* Add underline on hover */
+  color: #0056b3; /* Darken link color on hover */
+}
+/* --- END NEW STYLES --- */
+
 .products-overview__card-name {
   font-weight: 600;
   color: #000;
@@ -218,4 +232,21 @@
   font-size: 1.1rem;
   background-color: #f9f9f9;
   border-radius: 8px;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+  color: #7f8c8d;
+}
+
+.error-message {
+  color: #e74c3c;
+  background-color: #fadbd8;
+  border: 1px solid #f1948a;
+  padding: 15px;
+  border-radius: 5px;
+  text-align: center;
+  margin-bottom: 20px; /* Added to give space if it appears above other content */
 }

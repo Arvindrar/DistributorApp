@@ -6,64 +6,27 @@ import "./SalesAdd.css"; // Import the NEW CSS
 const LookupIcon = () => (
   <span className="lookup-indicator-icon" title="Lookup value">
     ○{" "}
-    {/* Unicode white circle - you used ○ which is fine, just being consistent */}
   </span>
 );
 
-// Icons (Ideally, move these to a shared components/icons.jsx file)
-const DropdownArrowIcon = ({ color = "#333" }) => (
-  <svg
-    width="10"
-    height="6"
-    viewBox="0 0 10 6"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    style={{ marginLeft: "5px" }}
-  >
-    <path
-      d="M1 1L5 5L9 1"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const UpArrowIcon = () => (
-  <svg
-    width="12"
-    height="8"
-    viewBox="0 0 12 8"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M11 7L6 2L1 7"
-      stroke="#6c757d"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+// Icons can be kept as is or moved to a shared file
 
 function SalesAdd() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
-    salesOrderNo: "", // Changed from purchaseOrderNo
-    customerCode: "", // Changed from vendorCode
-    customerName: "", // Changed from vendorName
-    soDate: "", // Changed from poDate
-    deliveryDate: "", // Changed from dueDate
-    documentDetails: "", // Can remain generic
-    customerRefNumber: "", // Changed from vendorRefNumber
-    shipToAddress: "", // Changed from payToAddress (more common for Sales)
-    salesRemarks: "", // Changed from purchaseRemarks
-    salesEmployee: "", // Changed from purchaseEmployee
-    uploadedFile: null,
+    salesOrderNo: "",
+    customerCode: "",
+    customerName: "",
+    soDate: "",
+    deliveryDate: "",
+    documentDetails: "",
+    customerRefNumber: "",
+    shipToAddress: "",
+    salesRemarks: "",
+    salesEmployee: "",
+    uploadedFiles: [], // MODIFIED: Store an array of files
   });
 
   const initialEmptyItem = (id) => ({
@@ -73,7 +36,7 @@ function SalesAdd() {
     quantity: "",
     uom: "",
     price: "",
-    warehouseLocation: "", // Changed from stockLocation (can be more specific for sales context)
+    warehouseLocation: "",
     taxCode: "",
     taxPrice: "",
     total: "",
@@ -83,7 +46,6 @@ function SalesAdd() {
   });
 
   const [salesItems, setSalesItems] = useState([
-    // Changed from purchaseItems
     initialEmptyItem(1),
     initialEmptyItem(2),
     initialEmptyItem(3),
@@ -96,11 +58,31 @@ function SalesAdd() {
   };
 
   const handleFileInputChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData((prev) => ({ ...prev, uploadedFile: file }));
-      console.log("Selected file:", file.name);
+    const files = Array.from(e.target.files); // Convert FileList to Array
+    if (files.length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        // Append new files to existing ones
+        uploadedFiles: [...prev.uploadedFiles, ...files],
+      }));
+      console.log(
+        "Selected files:",
+        files.map((f) => f.name)
+      );
     }
+    // Reset file input to allow re-selection of the same file(s)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveFile = (fileNameToRemove) => {
+    setFormData((prev) => ({
+      ...prev,
+      uploadedFiles: prev.uploadedFiles.filter(
+        (file) => file.name !== fileNameToRemove
+      ),
+    }));
   };
 
   const handleBrowseClick = () => {
@@ -109,109 +91,105 @@ function SalesAdd() {
 
   const handleItemChange = (e, itemId, fieldName) => {
     const { value } = e.target;
-    setSalesItems(
-      (
-        prevItems // Changed from setPurchaseItems
-      ) =>
-        prevItems.map((item) =>
-          item.id === itemId ? { ...item, [fieldName]: value } : item
-        )
+    setSalesItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === itemId ? { ...item, [fieldName]: value } : item
+      )
     );
     if (
       fieldName === "quantity" ||
       fieldName === "price" ||
-      fieldName === "tax"
+      fieldName === "taxPrice" // Assuming taxPrice is the direct tax amount
     ) {
-      calculateItemTotal(itemId, value, fieldName);
+      calculateItemTotal(itemId);
     }
   };
 
-  const calculateItemTotal = (itemId, currentValue, fieldName) => {
-    setSalesItems(
-      (
-        prevItems // Changed from setPurchaseItems
-      ) =>
-        prevItems.map((item) => {
-          if (item.id === itemId) {
-            let { quantity, price, tax } = item;
-            if (fieldName === "quantity") quantity = currentValue;
-            if (fieldName === "price") price = currentValue;
-            if (fieldName === "tax") tax = currentValue;
-
-            const numQuantity = parseFloat(quantity) || 0;
-            const numPrice = parseFloat(price) || 0;
-            const numTax = parseFloat(tax) || 0;
-
-            const calculatedTotal = numQuantity * numPrice + numTax;
-            return { ...item, total: calculatedTotal.toFixed(2) };
-          }
-          return item;
-        })
+  const calculateItemTotal = (itemId) => {
+    setSalesItems((prevItems) =>
+      prevItems.map((item) => {
+        if (item.id === itemId) {
+          const numQuantity = parseFloat(item.quantity) || 0;
+          const numPrice = parseFloat(item.price) || 0;
+          const numTaxPrice = parseFloat(item.taxPrice) || 0;
+          const calculatedTotal = numQuantity * numPrice + numTaxPrice;
+          return { ...item, total: calculatedTotal.toFixed(2) };
+        }
+        return item;
+      })
     );
   };
 
   const toggleLookupIndicator = (itemId, fieldName, show) => {
-    setSalesItems(
-      (
-        prevItems // Changed from setPurchaseItems
-      ) =>
-        prevItems.map((item) => {
-          if (item.id === itemId) {
-            const updates = {
-              showProductCodeLookup: false,
-              showProductNameLookup: false,
-              showTaxLookup: false,
-              [`show${
-                fieldName.charAt(0).toUpperCase() + fieldName.slice(1)
-              }Lookup`]: show,
-            };
-            return { ...item, ...updates };
-          }
-          return {
-            ...item,
+    setSalesItems((prevItems) =>
+      prevItems.map((item) => {
+        if (item.id === itemId) {
+          const lookupsToShow = {
             showProductCodeLookup: false,
             showProductNameLookup: false,
             showTaxLookup: false,
           };
-        })
+          if (fieldName === "ProductCode")
+            lookupsToShow.showProductCodeLookup = show;
+          else if (fieldName === "ProductName")
+            lookupsToShow.showProductNameLookup = show;
+          else if (fieldName === "taxCode" || fieldName === "taxPrice")
+            lookupsToShow.showTaxLookup = show;
+          return { ...item, ...lookupsToShow };
+        }
+        return {
+          ...item,
+          showProductCodeLookup: false,
+          showProductNameLookup: false,
+          showTaxLookup: false,
+        };
+      })
     );
   };
 
   const handleLookupClick = (itemId, fieldType) => {
     console.log(`Lookup clicked for item ${itemId}, field: ${fieldType}`);
-    toggleLookupIndicator(itemId, fieldType, false);
+    // Future: Implement lookup modal logic
   };
 
   const handleSave = () => {
-    const dataToSave = new FormData();
+    const dataToSend = new FormData();
+
     for (const key in formData) {
-      if (key === "uploadedFile" && formData[key]) {
-        dataToSave.append(key, formData[key], formData[key].name);
-      } else if (formData[key] !== null) {
-        dataToSave.append(key, formData[key]);
+      if (key !== "uploadedFiles" && formData[key] !== null) {
+        dataToSend.append(key, formData[key]);
       }
     }
+
+    if (formData.uploadedFiles && formData.uploadedFiles.length > 0) {
+      formData.uploadedFiles.forEach((file) => {
+        dataToSend.append("uploadedFiles", file, file.name); // Key for backend to receive multiple files
+      });
+    }
+
     const validSalesItems = salesItems.filter(
-      // Changed from purchaseItems
       (item) =>
         item.productCode || item.productName || item.quantity || item.price
     );
-    dataToSave.append("salesItems", JSON.stringify(validSalesItems)); // Changed key
+    dataToSend.append("salesItems", JSON.stringify(validSalesItems));
 
-    console.log("Saving new sales order data:");
-    for (let [key, value] of dataToSave.entries()) {
-      console.log(key, value);
+    console.log("Saving new sales order data (FormData entries):");
+    for (let [key, value] of dataToSend.entries()) {
+      if (value instanceof File) {
+        console.log(key, value.name, value.type, value.size);
+      } else {
+        console.log(key, value);
+      }
     }
-    // navigate('/sales'); // Navigate to sales overview or confirmation
+    // navigate('/sales'); // Uncomment when API is ready
   };
 
   const handleCancel = () => {
-    navigate("/salesorder"); // Navigate to sales overview
+    navigate("/salesorder");
   };
 
   const handleAddItemRow = () => {
     setSalesItems((prevItems) => [
-      // Changed from setPurchaseItems
       ...prevItems,
       initialEmptyItem(
         prevItems.length > 0 ? Math.max(...prevItems.map((i) => i.id)) + 1 : 1
@@ -219,23 +197,31 @@ function SalesAdd() {
     ]);
   };
 
+  // Calculate totals for summary
+  const productTotalSummary = salesItems
+    .reduce(
+      (sum, item) =>
+        sum + (parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0),
+      0
+    )
+    .toFixed(2);
+  const taxTotalSummary = salesItems
+    .reduce((sum, item) => sum + (parseFloat(item.taxPrice) || 0), 0)
+    .toFixed(2);
+  const grandTotalSummary = salesItems
+    .reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
+    .toFixed(2);
+
   return (
     <div className="detail-page-container">
-      {" "}
-      {/* This can remain generic */}
-      {/* Top Header Bar */}
       <div className="detail-page-header-bar">
-        <h1 className="detail-page-main-title">Create Sales Order</h1>{" "}
-        {/* Changed Title */}
+        <h1 className="detail-page-main-title">Create Sales Order</h1>
       </div>
-      {/* New Sales Info Header */}
-      {/* Using sales-order-add__ prefix for unique form styling if needed, or reuse record-entry-header */}
+
       <div className="sales-order-add__form-header">
         {" "}
-        {/* Or reuse "record-entry-header" if styles are identical */}
+        {/* Or reuse "record-entry-header" */}
         <div className="entry-header-column">
-          {" "}
-          {/* Generic column class */}
           <div className="entry-header-field">
             <label htmlFor="customerCode">Customer Code :</label>
             <input
@@ -271,22 +257,22 @@ function SalesAdd() {
           </div>
           <div className="entry-header-field">
             <label htmlFor="shipToAddress">Bill to Address :</label>
-            <input
-              type="text"
+            <textarea // Changed for potentially longer address
               id="shipToAddress"
               name="shipToAddress"
-              className="form-input-styled"
+              className="form-textarea-styled" // Use specific style for textarea
+              rows="2"
               value={formData.shipToAddress}
               onChange={handleInputChange}
             />
           </div>
           <div className="entry-header-field">
             <label htmlFor="salesRemarks">Remarks :</label>
-            <input
-              type="text"
+            <textarea // Changed for remarks
               id="salesRemarks"
               name="salesRemarks"
-              className="form-input-styled"
+              className="form-textarea-styled"
+              rows="2"
               value={formData.salesRemarks}
               onChange={handleInputChange}
             />
@@ -338,16 +324,15 @@ function SalesAdd() {
             />
           </div>
           <div className="entry-header-field file-input-container">
-            <label htmlFor="uploadImageFile">Attachment :</label>{" "}
-            {/* Changed label slightly */}
+            <label htmlFor="uploadFilesInput">Attachment(s) :</label>
             <input
               type="file"
-              id="uploadImageFile"
-              name="uploadImageFile"
+              id="uploadFilesInput" // Unique ID for file input
               ref={fileInputRef}
               className="form-input-file-hidden"
               onChange={handleFileInputChange}
-              // accept="image/*" // Keep if only images, or remove/change for general docs
+              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
+              multiple // MODIFIED: Allow multiple file selection
             />
             <button
               type="button"
@@ -356,33 +341,42 @@ function SalesAdd() {
             >
               Browse files
             </button>
-            {formData.uploadedFile && (
-              <span className="file-name-display">
-                {formData.uploadedFile.name}
-              </span>
+            {/* MODIFIED: Display multiple file names */}
+            {formData.uploadedFiles.length > 0 && (
+              <div className="file-names-display-area">
+                {formData.uploadedFiles.map((file, index) => (
+                  <div key={index} className="file-name-entry">
+                    <span className="file-name-display">{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile(file.name)}
+                      className="remove-file-btn"
+                      title="Remove file"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
       </div>
-      {/* Product Details Table Section */}
+
       <div className="detail-form-content-area">
-        {" "}
-        {/* This can remain generic */}
         <div className="sales-order-add__items-section">
-          {" "}
-          {/* Specific wrapper for SO table styles */}
           <div className="product-details-header">
-            {" "}
-            {/* Generic class */}
-            <h3 className="form-section-title">Product Details</h3>{" "}
-            {/* Generic class */}
+            <h3 className="form-section-title">Product Details</h3>
+            <button
+              type="button"
+              className="add-item-row-btn"
+              onClick={handleAddItemRow}
+            >
+              + Add Row
+            </button>
           </div>
           <div className="table-responsive-container">
-            {" "}
-            {/* Generic class */}
             <table className="so-add__items-table">
-              {" "}
-              {/* Unique table class: so-add__items-table */}
               <thead>
                 <tr>
                   <th>Product Code</th>
@@ -390,268 +384,232 @@ function SalesAdd() {
                   <th>Quantity</th>
                   <th>UOM</th>
                   <th>Price</th>
-                  <th>Stock Location</th> {/* Changed from Stock Location */}
+                  <th>Warehouse</th> {/* Changed from Stock Location */}
                   <th>Tax Code</th>
                   <th>Tax Price</th>
                   <th>Total</th>
                 </tr>
               </thead>
               <tbody>
-                {salesItems.map(
-                  (
-                    item // Changed from purchaseItems
-                  ) => (
-                    <tr key={item.id}>
-                      <td className="editable-cell product-code-cell">
-                        <input
-                          type="text"
-                          className="so-add__table-input" /* Unique input class */
-                          value={item.productCode}
-                          onChange={(e) =>
-                            handleItemChange(e, item.id, "productCode")
-                          }
-                          onFocus={() =>
-                            toggleLookupIndicator(item.id, "ProductCode", true)
-                          }
-                          onBlur={() =>
-                            setTimeout(() => {
-                              if (
-                                !document.activeElement.classList.contains(
-                                  "so-add__lookup-indicator" /* Unique lookup class */
-                                )
-                              ) {
-                                toggleLookupIndicator(
-                                  item.id,
-                                  "ProductCode",
-                                  false
-                                );
-                              }
-                            }, 150)
-                          }
-                        />
-                        {item.showProductCodeLookup && (
-                          <button
-                            type="button"
-                            className="so-add__lookup-indicator" /* Unique lookup class */
-                            onClick={() =>
-                              handleLookupClick(item.id, "ProductCode")
+                {salesItems.map((item) => (
+                  <tr key={item.id}>
+                    <td className="editable-cell product-code-cell">
+                      <input
+                        type="text"
+                        className="so-add__table-input"
+                        value={item.productCode}
+                        onChange={(e) =>
+                          handleItemChange(e, item.id, "productCode")
+                        }
+                        onFocus={() =>
+                          toggleLookupIndicator(item.id, "ProductCode", true)
+                        }
+                        onBlur={() =>
+                          setTimeout(() => {
+                            if (
+                              !document.activeElement?.classList.contains(
+                                "so-add__lookup-indicator"
+                              )
+                            ) {
+                              toggleLookupIndicator(
+                                item.id,
+                                "ProductCode",
+                                false
+                              );
                             }
-                            title="Lookup Product Code"
-                          >
-                            <LookupIcon />
-                          </button>
-                        )}
-                      </td>
-                      <td className="editable-cell product-name-cell">
-                        <input
-                          type="text"
-                          className="so-add__table-input" /* Unique input class */
-                          value={item.productName}
-                          onChange={(e) =>
-                            handleItemChange(e, item.id, "productName")
+                          }, 150)
+                        }
+                      />
+                      {item.showProductCodeLookup && (
+                        <button
+                          type="button"
+                          className="so-add__lookup-indicator"
+                          onClick={() =>
+                            handleLookupClick(item.id, "ProductCode")
                           }
-                          onFocus={() =>
-                            toggleLookupIndicator(item.id, "ProductName", true)
-                          }
-                          onBlur={() =>
-                            setTimeout(() => {
-                              if (
-                                !document.activeElement.classList.contains(
-                                  "so-add__lookup-indicator" /* Unique lookup class */
-                                )
-                              ) {
-                                toggleLookupIndicator(
-                                  item.id,
-                                  "ProductName",
-                                  false
-                                );
-                              }
-                            }, 150)
-                          }
-                        />
-                        {item.showProductNameLookup && (
-                          <button
-                            type="button"
-                            className="so-add__lookup-indicator" /* Unique lookup class */
-                            onClick={() =>
-                              handleLookupClick(item.id, "ProductName")
+                          title="Lookup Product Code"
+                        >
+                          <LookupIcon />
+                        </button>
+                      )}
+                    </td>
+                    <td className="editable-cell product-name-cell">
+                      <input
+                        type="text"
+                        className="so-add__table-input"
+                        value={item.productName}
+                        onChange={(e) =>
+                          handleItemChange(e, item.id, "productName")
+                        }
+                        onFocus={() =>
+                          toggleLookupIndicator(item.id, "ProductName", true)
+                        }
+                        onBlur={() =>
+                          setTimeout(() => {
+                            if (
+                              !document.activeElement?.classList.contains(
+                                "so-add__lookup-indicator"
+                              )
+                            ) {
+                              toggleLookupIndicator(
+                                item.id,
+                                "ProductName",
+                                false
+                              );
                             }
-                            title="Lookup Product Name"
-                          >
-                            <LookupIcon />
-                          </button>
-                        )}
-                      </td>
-                      <td className="editable-cell">
-                        <input
-                          type="number"
-                          className="so-add__table-input so-add__quantity-input" /* Unique input class */
-                          value={item.quantity}
-                          onChange={(e) =>
-                            handleItemChange(e, item.id, "quantity")
+                          }, 150)
+                        }
+                      />
+                      {item.showProductNameLookup && (
+                        <button
+                          type="button"
+                          className="so-add__lookup-indicator"
+                          onClick={() =>
+                            handleLookupClick(item.id, "ProductName")
                           }
-                          onBlur={() =>
-                            toggleLookupIndicator(
-                              item.id,
-                              "anyFieldToHideAll",
-                              false
-                            )
-                          }
-                        />
-                      </td>
-                      <td className="editable-cell">
-                        <input
-                          type="text"
-                          className="so-add__table-input so-add__uom-input" /* Unique input class */
-                          value={item.uom}
-                          onChange={(e) => handleItemChange(e, item.id, "uom")}
-                          onBlur={() =>
-                            toggleLookupIndicator(
-                              item.id,
-                              "anyFieldToHideAll",
-                              false
-                            )
-                          }
-                        />
-                      </td>
-                      <td className="editable-cell">
-                        <input
-                          type="number"
-                          className="so-add__table-input so-add__price-input" /* Unique input class */
-                          value={item.price}
-                          step="0.01"
-                          onChange={(e) =>
-                            handleItemChange(e, item.id, "price")
-                          }
-                          onBlur={() =>
-                            toggleLookupIndicator(
-                              item.id,
-                              "anyFieldToHideAll",
-                              false
-                            )
-                          }
-                        />
-                      </td>
-                      <td className="editable-cell">
-                        <input
-                          type="text"
-                          className="so-add__table-input" /* Unique input class */
-                          value={item.warehouseLocation} // Changed from stockLocation
-                          onChange={(e) =>
-                            handleItemChange(e, item.id, "warehouseLocation")
-                          }
-                          onBlur={() =>
-                            toggleLookupIndicator(
-                              item.id,
-                              "anyFieldToHideAll",
-                              false
-                            )
-                          }
-                        />
-                      </td>
-                      <td className="editable-cell tax-cell">
-                        <input
-                          type="number"
-                          className="so-add__table-input so-add__tax-input" /* Unique input class */
-                          value={item.taxCode}
-                          step="0.01"
-                          onChange={(e) =>
-                            handleItemChange(e, item.id, "taxCode")
-                          }
-                          onFocus={() =>
-                            toggleLookupIndicator(item.id, "TaxCode", true)
-                          }
-                          onBlur={() =>
-                            setTimeout(() => {
-                              if (
-                                !document.activeElement.classList.contains(
-                                  "so-add__lookup-indicator" /* Unique lookup class */
-                                )
-                              ) {
-                                toggleLookupIndicator(
-                                  item.id,
-                                  "TaxCode",
-                                  false
-                                );
-                              }
-                            }, 150)
-                          }
-                        />
-                        {item.showTaxLookup && (
-                          <button
-                            type="button"
-                            className="so-add__lookup-indicator" /* Unique lookup class */
-                            onClick={() =>
-                              handleLookupClick(item.id, "TaxCode")
+                          title="Lookup Product Name"
+                        >
+                          <LookupIcon />
+                        </button>
+                      )}
+                    </td>
+                    <td className="editable-cell">
+                      <input
+                        type="number"
+                        className="so-add__table-input so-add__quantity-input"
+                        value={item.quantity}
+                        min="0"
+                        onChange={(e) =>
+                          handleItemChange(e, item.id, "quantity")
+                        }
+                        onBlur={() =>
+                          toggleLookupIndicator(
+                            item.id,
+                            "anyFieldToHideAll",
+                            false
+                          )
+                        }
+                      />
+                    </td>
+                    <td className="editable-cell">
+                      <input
+                        type="text"
+                        className="so-add__table-input so-add__uom-input"
+                        value={item.uom}
+                        onChange={(e) => handleItemChange(e, item.id, "uom")}
+                        onBlur={() =>
+                          toggleLookupIndicator(
+                            item.id,
+                            "anyFieldToHideAll",
+                            false
+                          )
+                        }
+                      />
+                    </td>
+                    <td className="editable-cell">
+                      <input
+                        type="number"
+                        className="so-add__table-input so-add__price-input"
+                        value={item.price}
+                        step="0.01"
+                        min="0"
+                        onChange={(e) => handleItemChange(e, item.id, "price")}
+                        onBlur={() =>
+                          toggleLookupIndicator(
+                            item.id,
+                            "anyFieldToHideAll",
+                            false
+                          )
+                        }
+                      />
+                    </td>
+                    <td className="editable-cell">
+                      <input
+                        type="text"
+                        className="so-add__table-input"
+                        value={item.warehouseLocation}
+                        onChange={(e) =>
+                          handleItemChange(e, item.id, "warehouseLocation")
+                        }
+                        onBlur={() =>
+                          toggleLookupIndicator(
+                            item.id,
+                            "anyFieldToHideAll",
+                            false
+                          )
+                        }
+                      />
+                    </td>
+                    <td className="editable-cell tax-cell">
+                      <input
+                        type="text"
+                        className="so-add__table-input so-add__tax-input"
+                        value={item.taxCode}
+                        onChange={(e) =>
+                          handleItemChange(e, item.id, "taxCode")
+                        }
+                        onFocus={() =>
+                          toggleLookupIndicator(item.id, "taxCode", true)
+                        }
+                        onBlur={() =>
+                          setTimeout(() => {
+                            if (
+                              !document.activeElement?.classList.contains(
+                                "so-add__lookup-indicator"
+                              )
+                            ) {
+                              toggleLookupIndicator(item.id, "taxCode", false);
                             }
-                            title="Lookup Tax Rate/Amount"
-                          >
-                            <LookupIcon />
-                          </button>
-                        )}
-                      </td>
-
-                      <td className="editable-cell tax-cell">
-                        <input
-                          type="number"
-                          className="so-add__table-input so-add__tax-input" /* Unique input class */
-                          value={item.taxPrice}
-                          step="0.01"
-                          onChange={(e) =>
-                            handleItemChange(e, item.id, "taxPrice")
-                          }
-                          onFocus={() =>
-                            toggleLookupIndicator(item.id, "TaxPrice", true)
-                          }
-                          onBlur={() =>
-                            setTimeout(() => {
-                              if (
-                                !document.activeElement.classList.contains(
-                                  "so-add__lookup-indicator" /* Unique lookup class */
-                                )
-                              ) {
-                                toggleLookupIndicator(
-                                  item.id,
-                                  "TaxPrice",
-                                  false
-                                );
-                              }
-                            }, 150)
-                          }
-                        />
-                        {item.showTaxLookup && (
-                          <button
-                            type="button"
-                            className="so-add__lookup-indicator" /* Unique lookup class */
-                            onClick={() =>
-                              handleLookupClick(item.id, "TaxPrice")
-                            }
-                            title="Lookup Tax Rate/Amount"
-                          >
-                            <LookupIcon />
-                          </button>
-                        )}
-                      </td>
-                      <td className="total-cell">{item.total || "0.00"}</td>
-                    </tr>
-                  )
-                )}
+                          }, 150)
+                        }
+                      />
+                      {item.showTaxLookup && (
+                        <button
+                          type="button"
+                          className="so-add__lookup-indicator"
+                          onClick={() => handleLookupClick(item.id, "taxCode")}
+                          title="Lookup Tax"
+                        >
+                          <LookupIcon />
+                        </button>
+                      )}
+                    </td>
+                    <td className="editable-cell">
+                      <input
+                        type="number"
+                        className="so-add__table-input so-add__tax-input" // Re-use tax input style
+                        value={item.taxPrice}
+                        step="0.01"
+                        min="0"
+                        onChange={(e) =>
+                          handleItemChange(e, item.id, "taxPrice")
+                        }
+                        onBlur={() =>
+                          toggleLookupIndicator(
+                            item.id,
+                            "anyFieldToHideAll",
+                            false
+                          )
+                        }
+                      />
+                    </td>
+                    <td className="total-cell">{item.total || "0.00"}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
           <div className="tax-summary-container">
-            {" "}
-            {/* Was "tax-total" */}
             <div className="summary-item">
-              <label htmlFor="quantityTotalSummary" className="summary-label">
+              <label htmlFor="productTotalSummary" className="summary-label">
                 Product Total :
               </label>
               <input
                 type="text"
-                id="quantityTotalSummary"
+                id="productTotalSummary"
                 className="summary-input"
-                readOnly // Assuming these are calculated
-                // value={calculatedQuantityTotal} // You'll need to calculate and set this
+                readOnly
+                value={productTotalSummary}
               />
             </div>
             <div className="summary-item">
@@ -662,8 +620,8 @@ function SalesAdd() {
                 type="text"
                 id="taxTotalSummary"
                 className="summary-input"
-                readOnly // Assuming these are calculated
-                // value={calculatedTaxTotal} // You'll need to calculate and set this
+                readOnly
+                value={taxTotalSummary}
               />
             </div>
             <div className="summary-item">
@@ -674,24 +632,22 @@ function SalesAdd() {
                 type="text"
                 id="grandTotalSummary"
                 className="summary-input"
-                readOnly // Assuming these are calculated
-                // value={calculatedGrandTotal} // You'll need to calculate and set this
+                readOnly
+                value={grandTotalSummary}
               />
             </div>
           </div>
         </div>
       </div>
-      {/* Page Footer Actions (Sticky) */}
+
       <div className="detail-page-footer">
-        {" "}
-        {/* This can remain generic */}
         <div className="footer-actions-main">
           <button className="footer-btn primary" onClick={handleSave}>
-            Add Sales Order {/* Changed Button Text */}
+            Add Sales Order
           </button>
-          <button className="footer-btn primary">Remove</button>
+          <button className="footer-btn secondary">Remove</button>
         </div>
-        <button className="footer-btn primary" onClick={handleCancel}>
+        <button className="footer-btn secondary" onClick={handleCancel}>
           Cancel
         </button>
       </div>

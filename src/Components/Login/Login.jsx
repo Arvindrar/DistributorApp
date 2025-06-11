@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-import sapLogo from "../../assets/sap.webp";
+
 import dist from "../../assets/dist.png";
-import distri from "../../assets/distri.jpg";
-import dis from "../../assets/dis.webp";
 
 import "./Login.css";
 

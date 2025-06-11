@@ -1,8 +1,46 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import "./AddCustomers.css";
+import { useNavigate, useParams } from "react-router-dom";
+import "./UpdateCustomers.css"; // Ensure this CSS file exists
 
 const API_BASE_URL = "https://localhost:7074/api";
+
+// --- MODAL COMPONENTS ---
+const ConfirmationModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmButtonText = "Confirm",
+  cancelButtonText = "Cancel",
+  isConfirming,
+}) => {
+  if (!isOpen) return null;
+  return (
+    <div className="ac-modal-overlay">
+      <div className="ac-modal-content ac-confirmation-modal">
+        {title && <h4 className="ac-modal-title">{title}</h4>}
+        <p className="ac-modal-message">{message}</p>
+        <div className="ac-modal-actions">
+          <button
+            onClick={onClose}
+            className="ac-modal-button ac-modal-button-cancel"
+            disabled={isConfirming}
+          >
+            {cancelButtonText}
+          </button>
+          <button
+            onClick={onConfirm}
+            className="ac-modal-button ac-modal-button-confirm ac-modal-button-danger"
+            disabled={isConfirming}
+          >
+            {isConfirming ? "Processing..." : confirmButtonText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MessageModal = ({ message, onClose, type = "success" }) => {
   if (!message) return null;
@@ -17,28 +55,13 @@ const MessageModal = ({ message, onClose, type = "success" }) => {
     </div>
   );
 };
+// --- END MODAL COMPONENTS ---
 
-function AddCustomers() {
+function UpdateCustomers() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { customerId } = useParams();
 
-  const [error, setError] = useState(null);
-  const [modalState, setModalState] = useState({
-    message: "",
-    type: "info",
-    isActive: false,
-  });
-
-  const [customerGroupOptions, setCustomerGroupOptions] = useState([]);
-  const [isLoadingGroups, setIsLoadingGroups] = useState(true);
-  const [routeOptions, setRouteOptions] = useState([]);
-  const [isLoadingRoutes, setIsLoadingRoutes] = useState(true);
-  const [salesEmployeeOptions, setSalesEmployeeOptions] = useState([]);
-  const [isLoadingSalesEmployees, setIsLoadingSalesEmployees] = useState(true);
-  const [shippingTypeOptions, setShippingTypeOptions] = useState([]);
-  const [isLoadingShippingTypes, setIsLoadingShippingTypes] = useState(true);
-
-  const initialFormData = {
+  const initialFormState = {
     code: "",
     name: "",
     group: "",
@@ -58,21 +81,28 @@ function AddCustomers() {
     country: "",
     gstin: "",
   };
-  const [formData, setFormData] = useState(initialFormData);
 
-  const showModal = (message, type = "info") => {
-    setModalState({ message, type, isActive: true });
-  };
+  const [formData, setFormData] = useState(initialFormState);
 
-  const closeModal = () => {
-    const wasSuccess =
-      modalState.type === "success" &&
-      modalState.message.includes("Successfully");
-    setModalState({ message: "", type: "info", isActive: false });
-    if (wasSuccess) {
-      navigate("/customers", { state: { refreshCustomers: true } });
-    }
-  };
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [pageError, setPageError] = useState(null); // For general page load errors
+  const [infoMessage, setInfoMessage] = useState(""); // For modal messages (success/validation/API errors)
+
+  const [customerGroupOptions, setCustomerGroupOptions] = useState([]);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(true);
+
+  const [routeOptions, setRouteOptions] = useState([]);
+  const [isLoadingRoutes, setIsLoadingRoutes] = useState(true);
+
+  const [salesEmployeeOptions, setSalesEmployeeOptions] = useState([]);
+  const [isLoadingSalesEmployees, setIsLoadingSalesEmployees] = useState(true);
+
+  const [shippingTypeOptions, setShippingTypeOptions] = useState([]);
+  const [isLoadingShippingTypes, setIsLoadingShippingTypes] = useState(true);
+
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
   const fetchOptions = useCallback(
     async (endpoint, setOptions, setLoading, resourceName) => {
@@ -90,17 +120,62 @@ function AddCustomers() {
         );
       } catch (e) {
         console.error(`Failed to fetch ${resourceName}:`, e);
-        showModal(
-          `Failed to load ${resourceName}. Some dropdowns might not work.`,
-          "error"
+        setPageError((prevError) =>
+          prevError
+            ? `${prevError}\nFailed to load ${resourceName}.`
+            : `Failed to load ${resourceName}.`
         );
         setOptions([]);
       } finally {
         setLoading(false);
       }
     },
-    [] // Assuming showModal is stable
+    []
   );
+
+  const fetchCustomerData = useCallback(async (id) => {
+    setIsLoadingData(true);
+    setPageError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/Customer/${id}`);
+      if (!response.ok) {
+        if (response.status === 404) throw new Error("Customer not found.");
+        throw new Error(
+          `HTTP error fetching customer data! status: ${response.status}`
+        );
+      }
+      const data = await response.json();
+      setFormData({
+        code: data.code || "",
+        name: data.name || "",
+        group: data.group || "",
+        balance:
+          data.balance !== null && data.balance !== undefined
+            ? String(data.balance)
+            : "",
+        route: data.route || "",
+        employee: data.employee || "",
+        remarks: data.remarks || "",
+        contactNumber: data.contactNumber || "",
+        mailId: data.mailId || "",
+        shippingType: data.shippingType || "",
+        address1: data.address1 || "",
+        address2: data.address2 || "",
+        street: data.street || "",
+        postBox: data.postBox || "",
+        city: data.city || "",
+        state: data.state || "",
+        country: data.country || "",
+        gstin: data.gstin || "",
+      });
+    } catch (e) {
+      console.error("Failed to fetch customer data:", e);
+      setPageError(e.message || "Failed to load customer data.");
+      setFormData(initialFormState);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchOptions(
@@ -122,7 +197,15 @@ function AddCustomers() {
       setIsLoadingShippingTypes,
       "shipping types"
     );
-  }, [fetchOptions]);
+
+    if (customerId) {
+      fetchCustomerData(customerId);
+    } else {
+      setPageError("No Customer ID provided for update.");
+      setIsLoadingData(false);
+      setFormData(initialFormState);
+    }
+  }, [customerId, fetchOptions, fetchCustomerData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -141,46 +224,44 @@ function AddCustomers() {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
 
-    if (error) setError(null);
+    if (infoMessage) setInfoMessage("");
+    // if (pageError) setPageError(null); // Keep page load errors unless explicitly cleared
   };
 
-  const handleSave = async () => {
+  const handleUpdate = async () => {
     setIsSubmitting(true);
-    setError(null);
+    setInfoMessage("");
+    // setPageError(null); // Clear general errors before new action
 
+    // --- CLIENT-SIDE VALIDATION ---
     if (!formData.code.trim()) {
-      setError("Customer Code is required.");
-      showModal("Customer Code is required.", "error");
+      // Code is readOnly, but good to keep consistent checks
+      setInfoMessage("Customer Code is required.");
       setIsSubmitting(false);
       return;
     }
     if (!formData.name.trim()) {
-      setError("Customer Name is required.");
-      showModal("Customer Name is required.", "error");
+      setInfoMessage("Customer Name is required.");
       setIsSubmitting(false);
       return;
     }
     if (!formData.group) {
-      setError("Please select a Customer Group.");
-      showModal("Please select a Customer Group.", "error");
+      setInfoMessage("Please select a Customer Group.");
       setIsSubmitting(false);
       return;
     }
     if (!formData.mailId.trim()) {
-      setError("Email Address (Mail ID) is required.");
-      showModal("Email Address (Mail ID) is required.", "error");
+      setInfoMessage("Email Address (Mail ID) is required.");
       setIsSubmitting(false);
       return;
     }
     if (formData.mailId.trim() && !/\S+@\S+\.\S+/.test(formData.mailId)) {
-      setError("Please enter a valid Email Address.");
-      showModal("Please enter a valid Email Address.", "error");
+      setInfoMessage("Please enter a valid Email Address.");
       setIsSubmitting(false);
       return;
     }
     if (!formData.shippingType) {
-      setError("Please select a Shipping Type.");
-      showModal("Please select a Shipping Type.", "error");
+      setInfoMessage("Please select a Shipping Type.");
       setIsSubmitting(false);
       return;
     }
@@ -188,8 +269,7 @@ function AddCustomers() {
       formData.postBox.trim() !== "" &&
       !/^\d{6}$/.test(formData.postBox.trim())
     ) {
-      setError("Post Box must be exactly 6 digits if provided.");
-      showModal("Post Box must be exactly 6 digits if provided.", "error");
+      setInfoMessage("Post Box must be exactly 6 digits if provided.");
       setIsSubmitting(false);
       return;
     }
@@ -197,142 +277,190 @@ function AddCustomers() {
       formData.contactNumber.trim() !== "" &&
       !/^\d{10}$/.test(formData.contactNumber.trim())
     ) {
-      setError("Contact Number must be exactly 10 digits if provided.");
-      showModal(
-        "Contact Number must be exactly 10 digits if provided.",
-        "error"
-      );
+      setInfoMessage("Contact Number must be exactly 10 digits if provided.");
       setIsSubmitting(false);
       return;
     }
+    // --- END VALIDATION ---
 
-    const customerDataToSave = {
+    const customerDataToUpdate = {
+      id: parseInt(customerId), // Ensure ID is part of the payload if your API expects it in the body
       ...formData,
       balance: parseFloat(formData.balance) || 0,
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/Customer`, {
-        method: "POST",
+      const response = await fetch(`${API_BASE_URL}/Customer/${customerId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(customerDataToSave),
+        body: JSON.stringify(customerDataToUpdate),
       });
 
       if (!response.ok) {
-        let displayErrorMessage = `Error: ${response.status} ${response.statusText}`;
+        let apiErrorText = `Error: ${response.status} ${response.statusText}`;
         try {
           const errorData = await response.json();
-          if (errorData) {
-            if (errorData.errors) {
-              const fieldErrors = errorData.errors;
-              const fieldNames = Object.keys(fieldErrors);
-              if (fieldNames.length > 0) {
-                displayErrorMessage = fieldNames
-                  .map(
-                    (field) =>
-                      `${field}: ${
-                        Array.isArray(fieldErrors[field])
-                          ? fieldErrors[field].join(", ")
-                          : fieldErrors[field]
-                      }`
-                  )
-                  .join("; ");
-              } else if (errorData.title) {
-                displayErrorMessage = errorData.title;
-              }
-            } else if (errorData.title) {
-              displayErrorMessage = errorData.title;
-            } else if (errorData.detail) {
-              displayErrorMessage = errorData.detail;
-            } else if (
-              errorData.message &&
-              typeof errorData.message === "string"
+          if (errorData && errorData.errors) {
+            apiErrorText = Object.entries(errorData.errors)
+              .map(
+                ([field, messages]) =>
+                  `${field}: ${
+                    Array.isArray(messages) ? messages.join(", ") : messages
+                  }`
+              )
+              .join("; ");
+          } else if (errorData.title) {
+            apiErrorText = errorData.title;
+          } else if (errorData.detail) {
+            apiErrorText = errorData.detail;
+          } else if (typeof errorData === "string" && errorData.trim() !== "") {
+            apiErrorText = errorData;
+          } else if (
+            typeof errorData === "object" &&
+            Object.keys(errorData).length > 0
+          ) {
+            // Fallback for other object structures like ASP.NET Core validation problems
+            const firstErrorKey = Object.keys(errorData)[0];
+            if (
+              firstErrorKey &&
+              errorData[firstErrorKey] &&
+              Array.isArray(errorData[firstErrorKey])
             ) {
-              displayErrorMessage = errorData.message;
-            } else if (
-              typeof errorData === "string" &&
-              errorData.trim() !== ""
-            ) {
-              displayErrorMessage = errorData;
-            } else if (
-              typeof errorData === "object" &&
-              Object.keys(errorData).length > 0
-            ) {
-              const firstErrorKey = Object.keys(errorData)[0];
-              if (firstErrorKey && errorData[firstErrorKey]) {
-                const messages = errorData[firstErrorKey];
-                displayErrorMessage = `${firstErrorKey}: ${
-                  Array.isArray(messages) ? messages.join(", ") : messages
-                }`;
-              }
+              apiErrorText = `${firstErrorKey}: ${errorData[firstErrorKey].join(
+                ", "
+              )}`;
             }
           }
-        } catch (e) {
-          console.error("Failed to parse API error response as JSON:", e);
+        } catch {
+          /* no json body or other parsing error */
         }
-        showModal(displayErrorMessage, "error");
-        throw new Error(displayErrorMessage);
+        throw new Error(apiErrorText);
       }
-
-      showModal("Customer Added Successfully!", "success");
-      setFormData(initialFormData);
+      setInfoMessage("Customer Updated Successfully!");
+      // Optionally re-fetch data to reflect server state if there are server-side transformations
+      // fetchCustomerData(customerId);
     } catch (e) {
-      if (!modalState.isActive) {
-        showModal(
-          e.message || "Failed to save customer. Please try again.",
-          "error"
-        );
-      }
-      console.error("Failed to save customer (outer catch):", e.message);
+      console.error("Failed to update customer:", e);
+      setInfoMessage(e.message || "Failed to update customer.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCancel = () => {
-    if (!isSubmitting) {
-      navigate("/customers");
+  const handleRemoveClick = () => {
+    // setPageError(null);
+    setInfoMessage("");
+    setShowDeleteConfirmModal(true);
+  };
+
+  const confirmDelete = async () => {
+    setIsRemoving(true);
+    // setPageError(null);
+    setInfoMessage("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/Customer/${customerId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        let errorMessage = `Error: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage =
+            errorData.title ||
+            errorData.detail ||
+            errorData.message ||
+            (errorData.errors ? JSON.stringify(errorData.errors) : null) ||
+            errorMessage;
+        } catch (e) {
+          /* Ignore if error body parsing fails */
+        }
+        throw new Error(errorMessage);
+      }
+      setInfoMessage("Customer Removed Successfully!"); // This will trigger navigation via closeModalAndNavigate
+    } catch (e) {
+      console.error("Failed to remove customer:", e);
+      setInfoMessage(e.message || "Failed to remove customer.");
+    } finally {
+      setIsRemoving(false);
+      setShowDeleteConfirmModal(false);
     }
   };
 
-  const stillLoadingDropdowns =
+  const handleCancel = () => navigate("/customers");
+
+  const closeModalAndNavigate = () => {
+    const wasSuccess = infoMessage.includes("Successfully");
+    setInfoMessage("");
+    if (wasSuccess) {
+      navigate("/customers", { state: { refreshCustomers: true } });
+    }
+  };
+
+  const anyDropdownLoading =
     isLoadingGroups ||
     isLoadingRoutes ||
     isLoadingSalesEmployees ||
     isLoadingShippingTypes;
 
-  if (
-    stillLoadingDropdowns &&
-    !customerGroupOptions.length &&
-    !routeOptions.length &&
-    !salesEmployeeOptions.length &&
-    !shippingTypeOptions.length
-  ) {
+  // Combined loading state for initial page render
+  if (isLoadingData || (anyDropdownLoading && !formData.name)) {
+    // Show loading if data is fetching OR if dropdowns are fetching and no data yet
+    let loadingMessages = [];
+    if (isLoadingData && customerId) loadingMessages.push("customer details");
+    if (isLoadingGroups && !customerGroupOptions.length)
+      loadingMessages.push("groups");
+    if (isLoadingRoutes && !routeOptions.length) loadingMessages.push("routes");
+    if (isLoadingSalesEmployees && !salesEmployeeOptions.length)
+      loadingMessages.push("employees");
+    if (isLoadingShippingTypes && !shippingTypeOptions.length)
+      loadingMessages.push("shipping types");
+
+    if (loadingMessages.length > 0) {
+      return (
+        <div className="detail-page-container">
+          Loading {loadingMessages.join(", ")}...
+        </div>
+      );
+    }
+  }
+
+  // Handle case where customer data failed to load or no ID
+  if (pageError && !formData.name) {
     return (
-      <div className="detail-page-container">Loading selection options...</div>
+      <div className="detail-page-container error-message">
+        Error: {pageError}{" "}
+        <button onClick={() => navigate("/customers")}>
+          Back to Customers
+        </button>
+      </div>
     );
   }
 
   return (
     <div className="detail-page-container">
       <MessageModal
-        message={modalState.message}
-        onClose={closeModal}
-        type={modalState.type}
+        message={infoMessage}
+        onClose={closeModalAndNavigate}
+        type={infoMessage.includes("Successfully") ? "success" : "error"}
+      />
+      <ConfirmationModal
+        isOpen={showDeleteConfirmModal}
+        onClose={() => setShowDeleteConfirmModal(false)}
+        onConfirm={confirmDelete}
+        title="Confirm Deletion"
+        message={`Are you sure you want to remove customer "${
+          formData.name || "this customer"
+        }" (Code: ${formData.code || "N/A"})? This action cannot be undone.`}
+        confirmButtonText="Yes, Remove"
+        isConfirming={isRemoving}
       />
 
       <div className="detail-page-header-bar">
-        <h1 className="detail-page-main-title">New Customer</h1>
+        <h1 className="detail-page-main-title">Update Customer</h1>
+        {pageError && (
+          <div className="page-level-error-display">{pageError}</div>
+        )}
       </div>
-
-      {error && !modalState.isActive && (
-        <div
-          className="form-error-message"
-          style={{ color: "red", marginBottom: "15px", textAlign: "center" }}
-        >
-          {error}
-        </div>
-      )}
 
       <div className="customer-info-header">
         {/* Column 1 */}
@@ -347,6 +475,7 @@ function AddCustomers() {
               value={formData.code}
               onChange={handleInputChange}
               required
+              readOnly // Customer code usually not updatable
             />
           </div>
           <div className="customer-info-field">
@@ -393,7 +522,7 @@ function AddCustomers() {
                 id="contactNumber"
                 name="contactNumber"
                 className="form-input-styled form-input-contact-suffix"
-                value={formData.contactNumber}
+                value={formData.contactNumber || ""}
                 onChange={handleInputChange}
                 placeholder="10 digits"
               />
@@ -406,9 +535,9 @@ function AddCustomers() {
               id="mailId"
               name="mailId"
               className="form-input-styled"
-              value={formData.mailId}
+              value={formData.mailId || ""}
               onChange={handleInputChange}
-              required
+              required // Added required
             />
           </div>
           <div className="customer-info-field">
@@ -426,8 +555,7 @@ function AddCustomers() {
                 {isLoadingShippingTypes && !shippingTypeOptions.length
                   ? "Loading..."
                   : "Select Shipping Type"}
-              </option>{" "}
-              {/* THIS LINE WAS THE CULPRIT - CORRECTED */}
+              </option>
               {shippingTypeOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -501,9 +629,9 @@ function AddCustomers() {
               id="remarks"
               name="remarks"
               className="form-textarea-styled"
-              rows={4}
-              value={formData.remarks}
+              value={formData.remarks || ""}
               onChange={handleInputChange}
+              rows={4}
             />
           </div>
         </div>
@@ -548,14 +676,14 @@ function AddCustomers() {
           <div className="form-field-group form-field-group-inline">
             <label htmlFor="postBox">Post Box :</label>
             <input
-              type="text"
-              inputMode="numeric"
+              type="text" // Kept as text for JS control
+              inputMode="numeric" // Suggests numeric keyboard
               id="postBox"
               name="postBox"
               className="form-input-styled"
-              value={formData.postBox}
+              value={formData.postBox || ""}
               onChange={handleInputChange}
-              //placeholder="6 digits"
+              placeholder="6 digits"
             />
           </div>
           <div className="form-field-group form-field-group-inline">
@@ -606,25 +734,43 @@ function AddCustomers() {
       </div>
 
       <div className="detail-page-footer">
-        <div className="footer-actions-main">
+        <div className="footer-actions-left">
           <button
             className="footer-btn primary"
-            onClick={handleSave}
-            disabled={isSubmitting || stillLoadingDropdowns}
+            onClick={handleUpdate}
+            disabled={
+              isSubmitting ||
+              isLoadingData || // Disable while initial data is loading
+              anyDropdownLoading || // Disable if dropdowns are still loading
+              isRemoving
+            }
           >
-            {isSubmitting ? "Adding..." : "Add Customer"}
+            {isSubmitting ? "Updating..." : "Update Customer"}
+          </button>
+          <button
+            className="footer-btn danger"
+            onClick={handleRemoveClick}
+            disabled={
+              isSubmitting ||
+              isLoadingData || // Disable while initial data is loading
+              isRemoving
+            }
+          >
+            {isRemoving ? "Removing..." : "Remove"}
           </button>
         </div>
-        <button
-          className="footer-btn secondary"
-          onClick={handleCancel}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </button>
+        <div className="footer-actions-right">
+          <button
+            className="footer-btn secondary"
+            onClick={handleCancel}
+            disabled={isSubmitting || isRemoving}
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-export default AddCustomers;
+export default UpdateCustomers;

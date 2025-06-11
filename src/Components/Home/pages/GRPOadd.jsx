@@ -599,9 +599,9 @@ function GRPOadd() {
           <button className="footer-btn primary" onClick={handleSave}>
             Create GRPO
           </button>
-          <button className="footer-btn primary">Remove</button>
+          <button className="footer-btn secondary">Remove</button>
         </div>
-        <button className="footer-btn primary" onClick={handleCancel}>
+        <button className="footer-btn secondary" onClick={handleCancel}>
           Cancel
         </button>
       </div>

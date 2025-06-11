@@ -10,42 +10,7 @@ const LookupIcon = () => (
 );
 
 // Icons (Ideally, move these to a shared components/icons.jsx file)
-const DropdownArrowIcon = ({ color = "#333" }) => (
-  <svg
-    width="10"
-    height="6"
-    viewBox="0 0 10 6"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    style={{ marginLeft: "5px" }}
-  >
-    <path
-      d="M1 1L5 5L9 1"
-      stroke={color}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const UpArrowIcon = () => (
-  <svg
-    width="12"
-    height="8"
-    viewBox="0 0 12 8"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M11 7L6 2L1 7"
-      stroke="#6c757d"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+// ... (DropdownArrowIcon, UpArrowIcon - kept as is)
 
 function PurchaseAdd() {
   const navigate = useNavigate();
@@ -57,11 +22,11 @@ function PurchaseAdd() {
     vendorName: "",
     poDate: "",
     dueDate: "",
-    documentDetails: "",
+    documentDetails: "", // This might be used for general document notes
     vendorRefNumber: "",
     payToAddress: "",
     purchaseRemarks: "",
-    uploadedFile: null,
+    uploadedFiles: [], // MODIFIED: Store an array of files
   });
 
   const initialEmptyItem = (id) => ({
@@ -93,11 +58,35 @@ function PurchaseAdd() {
   };
 
   const handleFileInputChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData((prev) => ({ ...prev, uploadedFile: file }));
-      console.log("Selected file:", file.name);
+    const files = Array.from(e.target.files); // Convert FileList to Array
+    if (files.length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        // Append new files to existing ones, or replace if you prefer that behavior
+        // For appending:
+        uploadedFiles: [...prev.uploadedFiles, ...files],
+        // For replacing:
+        // uploadedFiles: files,
+      }));
+      console.log(
+        "Selected files:",
+        files.map((f) => f.name)
+      );
     }
+    // It's important to clear the input value so the onChange event fires
+    // even if the same file(s) are selected again after removing some.
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveFile = (fileNameToRemove) => {
+    setFormData((prev) => ({
+      ...prev,
+      uploadedFiles: prev.uploadedFiles.filter(
+        (file) => file.name !== fileNameToRemove
+      ),
+    }));
   };
 
   const handleBrowseClick = () => {
@@ -114,26 +103,28 @@ function PurchaseAdd() {
     if (
       fieldName === "quantity" ||
       fieldName === "price" ||
-      fieldName === "tax"
+      fieldName === "taxPrice" // Assuming taxPrice is the direct tax amount
     ) {
-      calculateItemTotal(itemId, value, fieldName);
+      calculateItemTotal(itemId); // Recalculate based on current item state
     }
   };
 
-  const calculateItemTotal = (itemId, currentValue, fieldName) => {
+  // Simplified calculateItemTotal, assumes values are already in the item object
+  const calculateItemTotal = (itemId) => {
     setPurchaseItems((prevItems) =>
       prevItems.map((item) => {
         if (item.id === itemId) {
-          let { quantity, price, tax } = item;
-          if (fieldName === "quantity") quantity = currentValue;
-          if (fieldName === "price") price = currentValue;
-          if (fieldName === "tax") tax = currentValue;
+          const numQuantity = parseFloat(item.quantity) || 0;
+          const numPrice = parseFloat(item.price) || 0;
+          const numTaxPrice = parseFloat(item.taxPrice) || 0; // Use taxPrice directly
 
-          const numQuantity = parseFloat(quantity) || 0;
-          const numPrice = parseFloat(price) || 0;
-          const numTax = parseFloat(tax) || 0;
+          // Total for one item = (Quantity * Price) + Tax Amount for that item
+          // If taxPrice is a rate, the calculation would be:
+          // const taxAmount = (numQuantity * numPrice) * (numTaxRate / 100);
+          // const calculatedTotal = (numQuantity * numPrice) + taxAmount;
+          // Assuming taxPrice IS the tax amount for the item:
+          const calculatedTotal = numQuantity * numPrice + numTaxPrice;
 
-          const calculatedTotal = numQuantity * numPrice + numTax;
           return { ...item, total: calculatedTotal.toFixed(2) };
         }
         return item;
@@ -145,17 +136,22 @@ function PurchaseAdd() {
     setPurchaseItems((prevItems) =>
       prevItems.map((item) => {
         if (item.id === itemId) {
-          const updates = {
+          const lookupsToShow = {
             showProductCodeLookup: false,
             showProductNameLookup: false,
-            showTaxLookup: false,
-            [`show${
-              fieldName.charAt(0).toUpperCase() + fieldName.slice(1)
-            }Lookup`]: show,
+            showTaxLookup: false, // General tax lookup, or remove if taxCode/taxPrice are separate
           };
-          return { ...item, ...updates };
+          // Dynamically set the specific lookup field to true
+          if (fieldName === "ProductCode")
+            lookupsToShow.showProductCodeLookup = show;
+          else if (fieldName === "ProductName")
+            lookupsToShow.showProductNameLookup = show;
+          else if (fieldName === "taxCode" || fieldName === "taxPrice")
+            lookupsToShow.showTaxLookup = show; // Or specific ones
+
+          return { ...item, ...lookupsToShow };
         }
-        // Hide lookups in other rows when a new one is focused
+        // Hide lookups in other rows when a new one is focused/blurred
         return {
           ...item,
           showProductCodeLookup: false,
@@ -170,29 +166,44 @@ function PurchaseAdd() {
     console.log(`Lookup clicked for item ${itemId}, field: ${fieldType}`);
     // Implement your lookup logic here (e.g., open modal)
     // For now, just hide the indicator
-    toggleLookupIndicator(itemId, fieldType, false);
+    // Note: The specific lookup state (e.g., showProductCodeLookup) will be set to false by onBlur
+    // or when another lookup is focused. So, we might not need to explicitly hide it here
+    // unless the modal interaction doesn't trigger blur.
   };
 
   const handleSave = () => {
-    const dataToSave = new FormData();
+    const dataToSend = new FormData(); // Use a different variable name to avoid confusion with component's formData state
+
+    // Append non-file formData fields
     for (const key in formData) {
-      if (key === "uploadedFile" && formData[key]) {
-        dataToSave.append(key, formData[key], formData[key].name);
-      } else if (formData[key] !== null) {
-        dataToSave.append(key, formData[key]);
+      if (key !== "uploadedFiles" && formData[key] !== null) {
+        dataToSend.append(key, formData[key]);
       }
     }
+
+    // Append each uploaded file
+    // The backend will receive these as multiple form parts with the same key "uploadedFiles"
+    if (formData.uploadedFiles && formData.uploadedFiles.length > 0) {
+      formData.uploadedFiles.forEach((file) => {
+        dataToSend.append("uploadedFiles", file, file.name); // Key can be e.g., "attachments[]" or just "attachments"
+      });
+    }
+
     const validPurchaseItems = purchaseItems.filter(
       (item) =>
         item.productCode || item.productName || item.quantity || item.price
     );
-    dataToSave.append("purchaseItems", JSON.stringify(validPurchaseItems));
+    dataToSend.append("purchaseItems", JSON.stringify(validPurchaseItems));
 
-    console.log("Saving new purchase order data:");
-    for (let [key, value] of dataToSave.entries()) {
-      console.log(key, value);
+    console.log("Saving new purchase order data (FormData entries):");
+    for (let [key, value] of dataToSend.entries()) {
+      if (value instanceof File) {
+        console.log(key, value.name, value.type, value.size);
+      } else {
+        console.log(key, value);
+      }
     }
-    // navigate('/purchases');
+    // navigate('/purchases'); // Uncomment when API call is ready
   };
 
   const handleCancel = () => {
@@ -208,6 +219,21 @@ function PurchaseAdd() {
     ]);
   };
 
+  // Calculate totals for summary (basic example)
+  const productTotalSummary = purchaseItems
+    .reduce(
+      (sum, item) =>
+        sum + (parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0),
+      0
+    )
+    .toFixed(2);
+  const taxTotalSummary = purchaseItems
+    .reduce((sum, item) => sum + (parseFloat(item.taxPrice) || 0), 0)
+    .toFixed(2);
+  const grandTotalSummary = purchaseItems
+    .reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
+    .toFixed(2);
+
   return (
     <div className="detail-page-container">
       {/* Top Header Bar */}
@@ -218,6 +244,7 @@ function PurchaseAdd() {
       {/* New Purchase Info Header */}
       <div className="record-entry-header">
         <div className="entry-header-column">
+          {/* Vendor Code, Name, Ref No, Pay to Address, Remarks */}
           <div className="entry-header-field">
             <label htmlFor="vendorCode">Vendor Code :</label>
             <input
@@ -253,11 +280,11 @@ function PurchaseAdd() {
           </div>
           <div className="entry-header-field">
             <label htmlFor="payToAddress">Pay to Address :</label>
-            <input
-              type="text"
+            <textarea // Changed to textarea for more space
               id="payToAddress"
               name="payToAddress"
-              className="form-input-styled"
+              className="form-textarea-styled" // Use textarea specific style
+              rows="2"
               value={formData.payToAddress}
               onChange={handleInputChange}
             />
@@ -265,17 +292,18 @@ function PurchaseAdd() {
 
           <div className="entry-header-field">
             <label htmlFor="purchaseRemarks">Remarks :</label>
-            <input
-              type="text"
+            <textarea // Changed to textarea
               id="purchaseRemarks"
               name="purchaseRemarks"
-              className="form-input-styled"
+              className="form-textarea-styled" // Use textarea specific style
+              rows="2"
               value={formData.purchaseRemarks}
               onChange={handleInputChange}
             />
           </div>
         </div>
         <div className="entry-header-column">
+          {/* PO Number, PO Date, Due Date, Attachment */}
           <div className="entry-header-field">
             <label htmlFor="purchaseOrderNo">PO Number :</label>
             <input
@@ -311,15 +339,16 @@ function PurchaseAdd() {
           </div>
 
           <div className="entry-header-field file-input-container">
-            <label htmlFor="uploadImageFile">Upload Image :</label>
+            <label htmlFor="uploadImageFile">Attachment(s) :</label>
             <input
               type="file"
               id="uploadImageFile"
-              name="uploadImageFile"
+              name="uploadImageFile" // This name doesn't matter much when using ref
               ref={fileInputRef}
               className="form-input-file-hidden"
               onChange={handleFileInputChange}
-              accept="image/*"
+              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt" // Specify accepted file types
+              multiple // MODIFIED: Allow multiple file selection
             />
             <button
               type="button"
@@ -328,10 +357,23 @@ function PurchaseAdd() {
             >
               Browse files
             </button>
-            {formData.uploadedFile && (
-              <span className="file-name-display">
-                {formData.uploadedFile.name}
-              </span>
+            {/* MODIFIED: Display multiple file names */}
+            {formData.uploadedFiles.length > 0 && (
+              <div className="file-names-display-area">
+                {formData.uploadedFiles.map((file, index) => (
+                  <div key={index} className="file-name-entry">
+                    <span className="file-name-display">{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile(file.name)}
+                      className="remove-file-btn"
+                      title="Remove file"
+                    >
+                      × {/* Simple 'x' for remove */}
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -340,10 +382,15 @@ function PurchaseAdd() {
       {/* Product Details Table Section */}
       <div className="detail-form-content-area">
         <div className="purchase-order-items-section">
-          {" "}
-          {/* Wrapper for PO table styles */}
           <div className="product-details-header">
             <h3 className="form-section-title">Product Details</h3>
+            <button
+              type="button"
+              className="add-item-row-btn" // You'll need to style this button
+              onClick={handleAddItemRow}
+            >
+              + Add Row
+            </button>
           </div>
           <div className="table-responsive-container">
             <table className="po-items-table">
@@ -376,9 +423,8 @@ function PurchaseAdd() {
                         }
                         onBlur={() =>
                           setTimeout(() => {
-                            // Delay to allow click on indicator
                             if (
-                              !document.activeElement.classList.contains(
+                              !document.activeElement?.classList.contains(
                                 "po-lookup-indicator"
                               )
                             ) {
@@ -418,7 +464,7 @@ function PurchaseAdd() {
                         onBlur={() =>
                           setTimeout(() => {
                             if (
-                              !document.activeElement.classList.contains(
+                              !document.activeElement?.classList.contains(
                                 "po-lookup-indicator"
                               )
                             ) {
@@ -449,6 +495,7 @@ function PurchaseAdd() {
                         type="number"
                         className="po-table-input po-quantity-input"
                         value={item.quantity}
+                        min="0" // Prevent negative quantities
                         onChange={(e) =>
                           handleItemChange(e, item.id, "quantity")
                         }
@@ -482,6 +529,7 @@ function PurchaseAdd() {
                         className="po-table-input po-price-input"
                         value={item.price}
                         step="0.01"
+                        min="0" // Prevent negative prices
                         onChange={(e) => handleItemChange(e, item.id, "price")}
                         onBlur={() =>
                           toggleLookupIndicator(
@@ -511,10 +559,9 @@ function PurchaseAdd() {
                     </td>
                     <td className="editable-cell tax-cell">
                       <input
-                        type="number"
+                        type="text" // Changed to text to allow % or fixed value input
                         className="po-table-input po-tax-input"
                         value={item.taxCode}
-                        step="0.01"
                         onChange={(e) =>
                           handleItemChange(e, item.id, "taxCode")
                         }
@@ -524,7 +571,7 @@ function PurchaseAdd() {
                         onBlur={() =>
                           setTimeout(() => {
                             if (
-                              !document.activeElement.classList.contains(
+                              !document.activeElement?.classList.contains(
                                 "po-lookup-indicator"
                               )
                             ) {
@@ -533,51 +580,37 @@ function PurchaseAdd() {
                           }, 150)
                         }
                       />
-                      {item.showTaxLookup && (
+                      {item.showTaxLookup && ( // Assuming one general tax lookup state
                         <button
                           type="button"
                           className="po-lookup-indicator"
                           onClick={() => handleLookupClick(item.id, "taxCode")}
-                          title="Lookup Tax Rate/Amount"
+                          title="Lookup Tax"
                         >
                           <LookupIcon />
                         </button>
                       )}
                     </td>
-                    <td className="editable-cell tax-cell">
+                    <td className="editable-cell">
+                      {" "}
+                      {/* Tax Price - direct amount */}
                       <input
                         type="number"
                         className="po-table-input po-tax-input"
                         value={item.taxPrice}
                         step="0.01"
+                        min="0"
                         onChange={(e) =>
                           handleItemChange(e, item.id, "taxPrice")
                         }
-                        onFocus={() =>
-                          toggleLookupIndicator(item.id, "taxPrice", true)
-                        }
                         onBlur={() =>
-                          setTimeout(() => {
-                            if (
-                              !document.activeElement.classList.contains(
-                                "po-lookup-indicator"
-                              )
-                            ) {
-                              toggleLookupIndicator(item.id, "taxPrice", false);
-                            }
-                          }, 150)
+                          toggleLookupIndicator(
+                            item.id,
+                            "anyFieldToHideAll",
+                            false
+                          )
                         }
                       />
-                      {item.showTaxLookup && (
-                        <button
-                          type="button"
-                          className="po-lookup-indicator"
-                          onClick={() => handleLookupClick(item.id, "taxPrice")}
-                          title="Lookup Tax Rate/Amount"
-                        >
-                          <LookupIcon />
-                        </button>
-                      )}
                     </td>
 
                     <td className="total-cell">{item.total || "0.00"}</td>
@@ -586,10 +619,7 @@ function PurchaseAdd() {
               </tbody>
             </table>
           </div>
-          {/* Inside your detail-form-content-area -> purchase-order-items-section, after the table-responsive-container */}
           <div className="tax-summary-container">
-            {" "}
-            {/* Was "tax-total" */}
             <div className="summary-item">
               <label htmlFor="quantityTotalSummary" className="summary-label">
                 Product Total :
@@ -598,8 +628,8 @@ function PurchaseAdd() {
                 type="text"
                 id="quantityTotalSummary"
                 className="summary-input"
-                readOnly // Assuming these are calculated
-                // value={calculatedQuantityTotal} // You'll need to calculate and set this
+                readOnly
+                value={productTotalSummary}
               />
             </div>
             <div className="summary-item">
@@ -610,8 +640,8 @@ function PurchaseAdd() {
                 type="text"
                 id="taxTotalSummary"
                 className="summary-input"
-                readOnly // Assuming these are calculated
-                // value={calculatedTaxTotal} // You'll need to calculate and set this
+                readOnly
+                value={taxTotalSummary}
               />
             </div>
             <div className="summary-item">
@@ -622,8 +652,8 @@ function PurchaseAdd() {
                 type="text"
                 id="grandTotalSummary"
                 className="summary-input"
-                readOnly // Assuming these are calculated
-                // value={calculatedGrandTotal} // You'll need to calculate and set this
+                readOnly
+                value={grandTotalSummary}
               />
             </div>
           </div>
@@ -636,9 +666,12 @@ function PurchaseAdd() {
           <button className="footer-btn primary" onClick={handleSave}>
             Add
           </button>
-          <button className="footer-btn primary">Remove</button>
+          <button className="footer-btn secondary">Remove</button>{" "}
+          {/* This button's functionality isn't implemented */}
         </div>
-        <button className="footer-btn primary" onClick={handleCancel}>
+        <button className="footer-btn secondary" onClick={handleCancel}>
+          {" "}
+          {/* Changed to secondary for typical cancel styling */}
           Cancel
         </button>
       </div>

@@ -1,41 +1,36 @@
-/* SalesEmployee.css */
+/* ShippingType.css */
 
-/* Main content wrapper for the Sales Employee page */
-.se-page-content {
-  /* se for SalesEmployee */
+/* Main content wrapper for the Shipping Type page */
+.st-page-content {
+  /* st for ShippingType */
   padding: 25px;
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-  min-height: calc(100vh - 50px); /* Adjust based on overall layout */
+  min-height: calc(100vh - 50px); /* Adjust as needed */
   display: flex;
   flex-direction: column;
   gap: 25px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif; /* Consistent font */
+    "Helvetica Neue", Arial, sans-serif;
 }
 
-.se-main-title {
-  font-size: 26px; /* Match your global h1 style */
+.st-main-title {
+  font-size: 26px;
   font-weight: bold;
   margin-top: 0;
   color: #333;
   margin-bottom: 0;
 }
 
-/* Table Styles - using global .data-table, .table-responsive-container */
-/* Assuming .table-responsive-container and .data-table are globally styled or defined elsewhere.
-   If not, copy their base styles from CustomerGroup.css or Routess.css and remove specific prefixes like cg- or rt-
-   if they are meant to be generic table styles.
-*/
-
-.data-table th.se-th-serial, /* Targeting within the global .data-table context */
-.data-table th.se-th-employeename {
-  /* Specific styling for sales employee table headers if needed */
+/* Table Styles - assuming .data-table & .table-responsive-container are globally styled or from shared CSS */
+.data-table th.st-th-serial,
+.data-table th.st-th-typename {
+  /* Specific header styling if needed */
 }
 
-.data-table td.se-td-serial {
-  width: 100px; /* Or your preferred width */
+.data-table td.st-td-serial {
+  width: 100px;
   text-align: center;
   font-weight: bold;
   color: #000000;
@@ -63,7 +58,7 @@
 }
 
 .data-table th {
-  background-color: #f8f9fa; /* Light grey for table headers */
+  background-color: #f8f9fa;
   color: #000000;
   font-weight: bold;
   white-space: nowrap;
@@ -77,9 +72,9 @@
   background-color: #f1f3f5;
 }
 
-.no-data-cell, /* These are likely general classes, keep as is */
-.se-loading-cell {
-  /* se for SalesEmployee specific loading message */
+.no-data-cell,
+.st-loading-cell {
+  /* st for ShippingType specific loading */
   text-align: center;
   padding: 20px;
   color: #777;
@@ -87,7 +82,7 @@
 }
 
 /* Create Section Styles */
-.se-create-section {
+.st-create-section {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -98,7 +93,7 @@
   border: 1px solid #e0e0e0;
 }
 
-.se-create-title {
+.st-create-title {
   font-size: 1.7em;
   font-weight: bold;
   color: #000000;
@@ -106,14 +101,14 @@
   margin: 0;
 }
 
-.se-form-row {
+.st-form-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%; /* Make form row take available width */
+  width: 100%;
 }
 
-.se-label {
+.st-label {
   font-size: 1em;
   font-weight: bold;
   color: #000000;
@@ -121,7 +116,7 @@
   flex-shrink: 0;
 }
 
-.se-input {
+.st-input {
   padding: 4px 10px;
   font-size: 13px;
   line-height: 1.5;
@@ -130,61 +125,61 @@
   background-clip: padding-box;
   border: 1px solid #ccc;
   border-radius: 0.19rem;
-  border-bottom-color: #0a0a0a; /* Darker bottom border */
+  border-bottom-color: #0a0a0a;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  width: 400px; /* Or adjust as needed */
+  width: 400px; /* Adjust as needed */
   min-width: 400px;
   flex-grow: 0;
   height: 27px;
   box-sizing: border-box;
 }
 
-.se-input::placeholder {
+.st-input::placeholder {
   color: #777;
   opacity: 1;
 }
 
-.se-input:focus {
-  border-color: #007bff; /* Blue focus for all borders */
+.st-input:focus {
+  border-color: #007bff;
   outline: 0;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Blue focus shadow */
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-.se-add-button {
+.st-add-button {
   padding: 5px 20px;
   font-size: 14px;
   font-weight: normal;
   color: #ffffff;
-  background-color: #007bff; /* Blue background */
-  border: 1px solid #007bff; /* Blue border */
+  background-color: #007bff;
+  border: 1px solid #007bff;
   border-radius: 3px;
   cursor: pointer;
   transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
   text-align: center;
-  height: 27px; /* Match input height */
+  height: 27px;
   box-sizing: border-box;
-  line-height: calc(27px - 10px - 2px); /* Approximate line height */
+  line-height: calc(27px - 10px - 2px);
 }
 
-.se-add-button:hover {
-  background-color: #0056b3; /* Darker blue on hover */
+.st-add-button:hover {
+  background-color: #0056b3;
   border-color: #0056b3;
 }
 
-.se-add-button:focus {
+.st-add-button:focus {
   outline: 2px solid rgba(0, 123, 255, 0.5);
   outline-offset: 1px;
 }
 
-.se-add-button:disabled {
+.st-add-button:disabled {
   background-color: #6c757d;
   border-color: #6c757d;
   opacity: 0.65;
   cursor: not-allowed;
 }
 
-/* Modal Styles (se-prefixed) */
-.se-modal-overlay {
+/* Modal Styles (st-prefixed) */
+.st-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -198,7 +193,7 @@
   padding: 15px;
 }
 
-.se-modal-content {
+.st-modal-content {
   background-color: white;
   padding: 25px 30px;
   border-radius: 6px;
@@ -210,19 +205,17 @@
   box-sizing: border-box;
 }
 
-.se-modal-content.success {
-  border-top: 5px solid #007bff; /* BLUE top border for success */
+.st-modal-content.success {
+  border-top: 5px solid #007bff;
+}
+.st-modal-content.error {
+  border-top: 5px solid #dc3545;
+}
+.st-modal-content.info {
+  border-top: 5px solid #17a2b8;
 }
 
-.se-modal-content.error {
-  border-top: 5px solid #dc3545; /* RED top border for error */
-}
-
-.se-modal-content.info {
-  border-top: 5px solid #17a2b8; /* TEAL/INFO top border */
-}
-
-.se-modal-content p {
+.st-modal-content p {
   margin-top: 0;
   margin-bottom: 25px;
   font-size: 1.05rem;
@@ -231,7 +224,7 @@
   word-wrap: break-word;
 }
 
-.se-modal-close-button {
+.st-modal-close-button {
   padding: 9px 20px;
   font-size: 0.9rem;
   font-weight: 500;
@@ -243,59 +236,57 @@
   color: white;
 }
 
-.se-modal-content.success .se-modal-close-button {
+.st-modal-content.success .st-modal-close-button {
   background-color: #007bff;
   border-color: #007bff;
 }
-.se-modal-content.success .se-modal-close-button:hover {
+.st-modal-content.success .st-modal-close-button:hover {
   background-color: #0056b3;
   border-color: #0056b3;
 }
-
-.se-modal-content.error .se-modal-close-button {
+.st-modal-content.error .st-modal-close-button {
   background-color: #dc3545;
   border-color: #dc3545;
 }
-.se-modal-content.error .se-modal-close-button:hover {
+.st-modal-content.error .st-modal-close-button:hover {
   background-color: #c82333;
   border-color: #bd2130;
 }
-
-.se-modal-content.info .se-modal-close-button {
+.st-modal-content.info .st-modal-close-button {
   background-color: #17a2b8;
   border-color: #17a2b8;
 }
-.se-modal-content.info .se-modal-close-button:hover {
+.st-modal-content.info .st-modal-close-button:hover {
   background-color: #117a8b;
   border-color: #10707f;
 }
 
-/* Responsive adjustments for smaller screens */
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .se-page-content {
+  .st-page-content {
     padding: 15px;
     gap: 20px;
   }
-  .se-main-title {
+  .st-main-title {
     font-size: 1.6rem;
   }
-  .se-create-title {
+  .st-create-title {
     font-size: 1.3em;
   }
-  .se-form-row {
+  .st-form-row {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
   }
-  .se-label {
+  .st-label {
     min-width: auto;
     text-align: left;
   }
-  .se-input {
+  .st-input {
     width: 100%;
     min-width: 0;
   }
-  .se-add-button {
+  .st-add-button {
     width: 100%;
   }
 }

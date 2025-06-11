@@ -474,3 +474,10 @@
 .po-items-table .total-cell {
   text-align: right; /* Often totals in tables are right-aligned */
 }
+
+.add-item-row-btn {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  border-radius: 2px;
+}

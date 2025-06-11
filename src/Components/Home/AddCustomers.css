@@ -542,3 +542,277 @@
   border-color: #333;
   box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
 }
+
+.footer-btn.secondary {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+/* AddCustomers.css */
+
+/* ... your existing styles for AddCustomers.css ... */
+
+/* Simple Modal Styles */
+
+/* Form Error Message Style */
+.form-error-message {
+  background-color: #f8d7da; /* Light red */
+  color: #721c24; /* Dark red text */
+  border: 1px solid #f5c6cb;
+  padding: 10px 15px;
+  border-radius: 5px;
+  margin-bottom: 20px; /* Space below the error message */
+  text-align: center;
+}
+
+/* MODAL STYLES (ac-prefixed) - Styled like the CustomerGroup modal */
+.ac-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 15px;
+}
+
+.ac-modal-content {
+  background-color: white;
+  padding: 25px 30px;
+  border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  min-width: 300px;
+  max-width: 450px;
+  width: 90%;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.ac-modal-content.success {
+  border-top: 5px solid #007bff; /* BLUE top border for success */
+}
+
+.ac-modal-content.error {
+  border-top: 5px solid #dc3545; /* RED top border for error */
+}
+
+.ac-modal-content p {
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-size: 1.05rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+.ac-modal-close-button {
+  padding: 9px 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+  min-width: 90px;
+}
+
+.ac-modal-content.success .ac-modal-close-button {
+  background-color: #007bff; /* BLUE background */
+  color: white;
+  border-color: #007bff;
+}
+.ac-modal-content.success .ac-modal-close-button:hover {
+  background-color: #0056b3; /* Darker BLUE */
+  border-color: #0056b3;
+}
+
+.ac-modal-content.error .ac-modal-close-button {
+  background-color: #dc3545; /* RED background */
+  color: white;
+  border-color: #dc3545;
+}
+.ac-modal-content.error .ac-modal-close-button:hover {
+  background-color: #c82333; /* Darker RED */
+  border-color: #bd2130;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .ac-customer-info-header {
+    grid-template-columns: 1fr; /* Single column */
+  }
+  .ac-form-field-group-inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ac-form-field-group-inline label {
+    text-align: left;
+    margin-bottom: 5px;
+    padding-right: 0;
+    flex-basis: auto; /* Reset flex-basis */
+  }
+  .ac-detail-page-footer {
+    flex-direction: column;
+    align-items: stretch; /* Make buttons full width */
+  }
+  .ac-footer-btn {
+    width: 100%;
+  }
+  .ac-footer-actions-main {
+    width: 100%;
+  }
+}
+
+/* AddCustomers.css */
+
+/* === PASTE THE FOLLOWING MODAL STYLES AT THE END OF YOUR EXISTING AddCustomers.css === */
+
+/* MODAL STYLES (ac-prefixed) - Styled like the CustomerGroup modal */
+.ac-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4); /* Semi-transparent background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050; /* Ensure it's above other content */
+  padding: 15px; /* For small screen safety */
+}
+
+.ac-modal-content {
+  background-color: white;
+  padding: 25px 30px; /* Padding inside the modal */
+  border-radius: 6px; /* Rounded corners for the modal box */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+  min-width: 300px; /* Minimum width */
+  max-width: 450px; /* Maximum width */
+  width: 90%; /* Responsive width */
+  text-align: center; /* Center the text and button */
+  box-sizing: border-box;
+  /* Top border will be applied by .success or .error class */
+}
+
+.ac-modal-content.success {
+  border-top: 5px solid #007bff; /* BLUE top border for success */
+}
+
+.ac-modal-content.error {
+  border-top: 5px solid #dc3545; /* RED top border for error */
+}
+
+.ac-modal-content p {
+  margin-top: 0;
+  margin-bottom: 25px; /* Space between the message and the OK button */
+  font-size: 1.05rem; /* Readable font size for the message */
+  color: #333; /* Standard dark text color */
+  line-height: 1.5; /* Good line spacing */
+}
+
+.ac-modal-close-button {
+  padding: 9px 20px; /* Padding for the OK button */
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 4px; /* Match other button radius if desired */
+  cursor: pointer;
+  border: 1px solid transparent; /* Base border, actual color set by type */
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+  min-width: 90px; /* Minimum width for the OK button */
+  color: white; /* Text color for the button is white */
+}
+
+/* Style the OK button based on modal type (success or error) */
+.ac-modal-content.success .ac-modal-close-button {
+  background-color: #007bff; /* BLUE background for success button */
+  border-color: #007bff;
+}
+.ac-modal-content.success .ac-modal-close-button:hover {
+  background-color: #0056b3; /* Darker BLUE on hover */
+  border-color: #0056b3;
+}
+
+.ac-modal-content.error .ac-modal-close-button {
+  background-color: #dc3545; /* RED background for error button */
+  border-color: #dc3545;
+}
+.ac-modal-content.error .ac-modal-close-button:hover {
+  background-color: #c82333; /* Darker RED on hover */
+  border-color: #bd2130;
+}
+
+/* === END OF MODAL STYLES === */
+
+/* AddCustomers.css */
+
+/* ... (all your existing styles) ... */
+
+/* === STYLES FOR COMPOUND CONTACT NUMBER INPUT === */
+.customer-info-field .compound-input-contact {
+  display: flex; /* Arrange prefix and input side-by-side */
+  align-items: center; /* Vertically align items within the container */
+  width: 400px; /* Match the width of other .form-input-styled in this section */
+  height: 27px; /* Match the height of other .form-input-styled */
+  background-color: #fff; /* Background for the whole compound input */
+  border: 1px solid #ccc; /* Mimic standard input border */
+  border-radius: 0.19rem; /* Mimic standard input border-radius */
+  border-bottom-color: #0a0a0a; /* Mimic standard input bottom border emphasis */
+  box-sizing: border-box; /* Ensures padding and border are included in width/height */
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; /* For focus */
+}
+
+.customer-info-field .compound-input-contact .input-prefix-contact {
+  padding: 0 8px 0 10px; /* Padding: top/bottom L/R */
+  font-size: 13px; /* Match input font size */
+  color: #555; /* Color for the "+91" text */
+  white-space: nowrap; /* Prevent "+91" from wrapping */
+  height: 100%; /* Take full height of the container */
+  display: flex;
+  align-items: center; /* Vertically center the text */
+  box-sizing: border-box;
+  border-right: 1px solid #ccc; /* Separator line */
+  background-color: #f8f9fa; /* Optional: slight background for prefix area */
+  /* Ensure prefix part has rounded corners on the left if container does */
+  border-top-left-radius: inherit; /* Inherit from .compound-input-contact */
+  border-bottom-left-radius: inherit; /* Inherit from .compound-input-contact */
+}
+
+.customer-info-field .compound-input-contact .form-input-contact-suffix {
+  /* This input still uses .form-input-styled for font, placeholder color, etc. */
+  /* We override properties related to border, width, and standalone appearance. */
+  border: none; /* Border is now on the .compound-input-contact container */
+  outline: none; /* Remove default browser outline on focus */
+  border-radius: 0; /* Inner input doesn't need its own full radius */
+  /* Specific rounding for the right side of the input part */
+  border-top-right-radius: inherit; /* Inherit from .compound-input-contact */
+  border-bottom-right-radius: inherit; /* Inherit from .compound-input-contact */
+
+  width: auto; /* Allow flex-grow to determine its width */
+  min-width: 50px; /* Prevent it from collapsing too much */
+  flex-grow: 1; /* The input field takes up the remaining space */
+  height: 100%; /* Fill the height of the .compound-input-contact */
+  /* box-sizing: border-box; is inherited from .form-input-styled or should be explicit if needed */
+  /* padding: 4px 10px; is inherited from .form-input-styled. This provides internal spacing. */
+  background-color: transparent; /* Make its background transparent to show container's bg */
+}
+
+/* Focus styling for the entire compound input */
+.customer-info-field .compound-input-contact:focus-within {
+  border-color: #333; /* Dark grey or black border on focus */
+  /* outline: 0; /* Already on form-input-styled, container needs it if not inherited */
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1); /* Subtle grey shadow */
+}
+
+/* When the container is focused, the prefix's right border should also match */
+.customer-info-field
+  .compound-input-contact:focus-within
+  .input-prefix-contact {
+  border-right-color: #333; /* Match focused border color */
+}
+
+/* === END OF STYLES FOR COMPOUND CONTACT NUMBER INPUT === */

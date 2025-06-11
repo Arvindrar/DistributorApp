@@ -188,6 +188,16 @@
   border-color: #007bff;
 }
 
+.pa-btn.cancel {
+  background-color: red;
+  color: white;
+  border-color: red;
+}
+.pa-btn.cancel:hover {
+  background-color: red;
+  border-color: red;
+}
+
 .pa-btn.link {
   background-color: transparent;
   color: #555;
@@ -268,4 +278,164 @@
     margin-left: 0;
     text-align: center;
   }
+}
+
+/* ProductsAdd.css */
+
+/* ... (all your existing .pa-page-container, .pa-header-bar, .pa-form-grid, .pa-input, .pa-btn etc.) ... */
+
+/* Error message display for form validation before submission (if not using modal for these) */
+.pa-form-error-message {
+  /* If you have a dedicated spot for form errors outside modal */
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 0.9em;
+  text-align: left; /* Or center if you prefer */
+}
+
+/* MODAL STYLES (pa-prefixed) - Styled like the CustomerGroup modal */
+.pa-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4); /* Same overlay as cg-modal */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 15px;
+}
+
+.pa-modal-content {
+  background-color: white;
+  padding: 25px 30px;
+  border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  min-width: 300px;
+  max-width: 450px;
+  width: 90%;
+  text-align: center;
+  box-sizing: border-box;
+  /* Top border will be applied by .success or .error class */
+}
+
+.pa-modal-content.success {
+  border-top: 5px solid #007bff; /* BLUE top border for success (consistent with CustomerGroup modal) */
+  /* If you want Green for product success: use #28a745 or #2ecc71 */
+}
+
+.pa-modal-content.error {
+  border-top: 5px solid #dc3545; /* RED top border for error */
+}
+
+.pa-modal-content p {
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-size: 1.05rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+.pa-modal-close-button {
+  padding: 9px 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+  min-width: 90px;
+}
+
+/* Style the OK button based on modal type */
+.pa-modal-content.success .pa-modal-close-button {
+  background-color: #007bff; /* BLUE background for success button */
+  /* If you want Green: use #28a745 or #2ecc71 */
+  color: white;
+  border-color: #007bff; /* If you want Green: use #28a745 or #2ecc71 */
+}
+.pa-modal-content.success .pa-modal-close-button:hover {
+  background-color: #0056b3; /* Darker BLUE */
+  /* If you want Green: use #218838 or #27ae60 */
+  border-color: #0056b3; /* If you want Green: use #218838 or #27ae60 */
+}
+
+.pa-modal-content.error .pa-modal-close-button {
+  background-color: #dc3545; /* RED background */
+  color: white;
+  border-color: #dc3545;
+}
+.pa-modal-content.error .pa-modal-close-button:hover {
+  background-color: #c82333; /* Darker RED */
+  border-color: #bd2130;
+}
+
+/* Ensure your .pa-btn (like the main Add Product button) has disabled styles */
+.pa-btn:disabled,
+.pa-add-button:disabled {
+  /* If you have a .pa-add-button specific class */
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* In ProductsAdd.css */
+
+/* ... your existing styles ... */
+
+.pa-field-group label {
+  font-size: 0.875rem;
+  color: #555555;
+  font-weight: normal;
+  margin-bottom: 0;
+  flex-shrink: 0; /* Keep this so label doesn't shrink */
+  width: 120px; /* Your FIXED width for labels */
+  text-align: left;
+  margin-right: 10px; /* Space between label and the input/select area */
+}
+
+/* Styles for the hybrid UOM container */
+.pa-uom-hybrid-container {
+  /* This class already exists as pa-field-group, so it inherits its display:flex, align-items:center. */
+  /* No new styles might be needed here unless you want to override something specific for this group. */
+}
+
+.pa-uom-inputs-wrapper {
+  display: flex;
+  flex-direction: column; /* Stack select and manual input vertically */
+  flex-grow: 1; /* Allow this wrapper to take the remaining space next to the label */
+  gap: 8px; /* Space between the select and the manual input field if it appears */
+}
+
+/* Ensure select and manual input take appropriate width within the wrapper */
+.pa-uom-inputs-wrapper .pa-select,
+.pa-uom-inputs-wrapper .pa-input-manual-uom {
+  width: 100%; /* Make them take the full width of the pa-uom-inputs-wrapper */
+  /* The min-width: 400px from .pa-input, .pa-select might be too large here if the column is constrained.
+     Consider removing or adjusting it for these specific elements if layout breaks.
+     Or, ensure .pa-uom-inputs-wrapper itself has enough width. */
+  min-width: 0; /* Override general min-width if it causes issues here */
+}
+
+.pa-input-manual-uom {
+  /* margin-top: 8px; /* Or use the gap in pa-uom-inputs-wrapper */
+  /* No specific margin-top needed if using gap in the wrapper */
+}
+
+/* Adjust existing .pa-input, .pa-select if the min-width: 400px is problematic */
+.pa-input,
+.pa-select,
+.pa-textarea {
+  /* ... your existing styles ... */
+  /* width: 100%; */ /* This is good */
+  /* min-width: 400px; */ /* This might be too restrictive for the hybrid layout. 
+                          If you see overflow, try reducing this or setting it to 0 for 
+                          .pa-uom-inputs-wrapper .pa-select and .pa-input-manual-uom */
+  flex-grow: 1;
+  /* ... rest of your styles ... */
 }

@@ -1,190 +1,274 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "./Products.css"; // Ensure this is imported and path is correct
-
-import imgA1 from "../../../assets/b1.jpg";
-import imgA2 from "../../../assets/b2.jpg";
-import imgA3 from "../../../assets/b3.jpg";
-import imgA4 from "../../../assets/b4.jpg";
-import imgA5 from "../../../assets/b5.jpg";
-import imgA6 from "../../../assets/b6.jpg";
-import imgA7 from "../../../assets/b7.jpg";
-import imgA8 from "../../../assets/b8.jpg";
-// Assuming imgA9 and placeholderImg were intended to be unique or specific if needed
-// For now, let's keep them as you had in the last snippet
-import imgA9 from "../../../assets/b1.jpg"; // Example: Reusing b1 for SKU005 if it's different from imgA7
-import placeholderImg from "../../../assets/b2.jpg"; // Example: Reusing b2 as placeholder
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import "./Products.css";
+import {
+  API_PRODUCTS_ENDPOINT,
+  API_PRODUCT_GROUPS_ENDPOINT,
+  IMAGES_BASE_URL,
+  PLACEHOLDER_IMG_PATH,
+} from "../../../config";
 
 function Products() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [selectedGroup, setSelectedGroup] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [products, setProducts] = useState([]);
+  const [productGroupOptions, setProductGroupOptions] = useState([]);
 
-  const productGroupOptions = [
-    { value: "Brooms", label: "Brooms" },
-    { value: "Mops", label: "Mops" },
-    { value: "Floor Cleaners", label: "Floor Cleaners" },
-    { value: "Bathroom Care", label: "Bathroom Care" },
-    { value: "Laundry Care", label: "Laundry Care" },
-    { value: "Personal Care", label: "Personal Care" },
-  ];
+  const [isLoading, setIsLoading] = useState(true); // isLoading for product list
+  const [isLoadingGroups, setIsLoadingGroups] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [productsData, setProductsData] = useState([
-    {
-      id: "SKU001",
-      name: "Monkey 555 International steel Handle Broom",
-      group: "Brooms",
-      uom: "Piece",
-      price: { min: 220.0, max: 440.0 }, // Store as an object
-      imageSrc: imgA1,
-    },
-    {
-      id: "SKU002",
-      name: "Monkey 555 Mach 3 Broom",
-      group: "Brooms",
-      uom: "Piece",
-      price: { min: 190.0, max: 380.0 }, // Store as an object
-      imageSrc: imgA2,
-    },
-    {
-      id: "SKU003",
-      name: "Monkey 555 T-Mop Popular",
-      group: "Mops",
-      uom: "piece",
-      price: { min: 185.0, max: 370.0 }, // Store as an object
-      imageSrc: imgA3,
-    },
-    {
-      id: "SKU004",
-      name: "Black Belt Phenolic Cleaner 500 ML",
-      group: "Floor Cleaners",
-      uom: "Piece",
-      price: 150.0, // Single price remains a number
-      imageSrc: imgA4,
-    },
-    {
-      id: "SKU021",
-      name: "Black Belt Toilet Cleaner 500 ML",
-      group: "Bathroom Care",
-      uom: "Piece",
-      price: { min: 150.0, max: 300.0 }, // Store as an object
-      imageSrc: imgA5,
-    },
-    {
-      id: "SKU022",
-      name: "Monkey VVV Wonder Wash Detergent Powder - 1kg",
-      group: "Laundry Care",
-      uom: "Piece",
-      price: { min: 70.0, max: 140.0 }, // Store as an object
-      imageSrc: imgA6,
-    },
-    {
-      id: "SKU005",
-      name: "Monkey 555 Soft Broom",
-      group: "Brooms",
-      uom: "Set", // Changed from Piece to Set based on previous examples for brooms, adjust if needed
-      price: { min: 230.0, max: 460.0 }, // Store as an object
-      imageSrc: imgA7, // Using imgA7, ensure this is the correct image
-    },
-    {
-      id: "SKU006",
-      name: "Monkey 555 Spin Mop",
-      group: "Mops",
-      uom: "piece",
-      price: 1499.0, // Single price remains a number
-      imageSrc: imgA8,
-    },
-    {
-      id: "SKU007",
-      name: "Monkey 555 International steel Handle Broom",
-      group: "Brooms",
-      uom: "Piece",
-      price: { min: 220.0, max: 440.0 }, // Store as an object
-      imageSrc: imgA1,
-    },
-    {
-      id: "SKU008",
-      name: "Monkey 555 Mach 3 Broom",
-      group: "Brooms",
-      uom: "Piece",
-      price: { min: 190.0, max: 380.0 }, // Store as an object
-      imageSrc: imgA2,
-    },
-    {
-      id: "SKU009",
-      name: "Monkey 555 T-Mop Popular",
-      group: "Mops",
-      uom: "piece",
-      price: { min: 185.0, max: 370.0 }, // Store as an object
-      imageSrc: imgA3,
-    },
-    {
-      id: "SKU010",
-      name: "Black Belt Phenolic Cleaner 500 ML",
-      group: "Floor Cleaners",
-      uom: "Piece",
-      price: 150.0, // Single price remains a number
-      imageSrc: imgA4,
-    },
+  const searchTimeoutRef = useRef(null); // Ref for debouncing search
+
+  const fetchProductGroups = useCallback(async () => {
+    setIsLoadingGroups(true);
+    // setError(null); // Clear group-specific error if needed
+    try {
+      const response = await fetch(API_PRODUCT_GROUPS_ENDPOINT);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to fetch product groups: ${response.status} ${errorText}`
+        );
+      }
+      const data = await response.json();
+      const options = data.map((group) => ({
+        value: group.name,
+        label: group.name,
+      }));
+      setProductGroupOptions(options);
+    } catch (e) {
+      console.error("Error fetching product groups:", e);
+      //setError("Failed to load product groups. Filtering may be affected."); // Optional: set error for groups
+      setProductGroupOptions([]);
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  }, []);
+
+  // fetchProducts takes group and search as arguments
+  const fetchProducts = useCallback(async (group, search) => {
+    setIsLoading(true);
+    setError(null); // Clear previous product fetch errors
+    let url = `${API_PRODUCTS_ENDPOINT}?`;
+    const params = new URLSearchParams();
+    if (group) params.append("group", group);
+    if (search) params.append("searchTerm", search);
+    url += params.toString();
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        let errorMessage = `Failed to fetch products: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (
+            errorData?.message ||
+            errorData?.title ||
+            typeof errorData === "string"
+          ) {
+            errorMessage = errorData.message || errorData.title || errorData;
+          }
+        } catch (_) {
+          /* Ignore if parsing error body fails */
+        }
+        throw new Error(errorMessage);
+      }
+      const data = await response.json();
+      setProducts(data);
+    } catch (e) {
+      // Corrected: removed underscore
+      console.error("Error fetching products:", e);
+      setError(e.message || "Could not load products. Please try again later.");
+      setProducts([]); // Clear products on error
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // Empty dependency array: fetchProducts function reference is stable
+
+  useEffect(() => {
+    fetchProductGroups();
+  }, [fetchProductGroups]);
+
+  // Debounced effect for fetching products based on searchTerm and selectedGroup
+  useEffect(() => {
+    // This effect handles initial fetch and subsequent filtered fetches
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      // Don't fetch if groups are still loading for the very first load,
+      // as fetchProducts might depend on group selection logic not fully ready.
+      // However, for subsequent searches, allow it.
+      // This condition is a bit tricky; often it's fine to fetch even if groups are still loading
+      // if the API handles empty group parameters gracefully.
+      // For simplicity here, we assume initial fetch should wait for groups if that's a strict dependency.
+      // But for search/filter changes, we proceed.
+      // if (!isLoadingGroups || products.length > 0 || selectedGroup || searchTerm) {
+      fetchProducts(selectedGroup, searchTerm);
+      // }
+    }, 400); // Debounce time in milliseconds
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm, selectedGroup, fetchProducts]); // fetchProducts is stable
+
+  // Effect for refreshing products based on location state
+  useEffect(() => {
+    if (location.state && location.state.refreshProducts) {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      // Fetch immediately, using current filters
+      fetchProducts(selectedGroup, searchTerm);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [
+    location.state,
+    fetchProducts,
+    navigate,
+    location.pathname,
+    selectedGroup,
+    searchTerm,
   ]);
 
-  const handleGroupChange = (event) => {
-    setSelectedGroup(event.target.value);
-  };
+  const handleGroupChange = (event) => setSelectedGroup(event.target.value);
+  const handleSearchChange = (event) => setSearchTerm(event.target.value);
+  const handleAddProductClick = () => navigate("/products/add");
 
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
-  const handleAddProductClick = () => {
-    console.log("Add Product button clicked, navigating to /products/add");
-    navigate("/products/add");
-  };
-
-  const filteredProducts = productsData.filter((product) => {
-    const groupMatch = selectedGroup ? product.group === selectedGroup : true;
-    const searchMatch = searchTerm
-      ? product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (product.id &&
-          product.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (product.group &&
-          product.group.toLowerCase().includes(searchTerm.toLowerCase()))
-      : true;
-    return groupMatch && searchMatch;
-  });
-
-  // --- MODIFIED formatCurrency function ---
-  const formatCurrency = (priceValue) => {
-    // Helper function to format a single number
+  const formatCurrency = (price1, price2) => {
     const singleFormatter = (amount) =>
       new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
         minimumFractionDigits: 2,
-      }).format(amount);
-
-    if (
-      typeof priceValue === "object" &&
-      priceValue !== null &&
-      typeof priceValue.min === "number" &&
-      typeof priceValue.max === "number"
-    ) {
-      // It's a price range object
-      return `${singleFormatter(priceValue.min)} - ${singleFormatter(
-        priceValue.max
-      )}`;
-    } else if (typeof priceValue === "number") {
-      // It's a single price number
-      return singleFormatter(priceValue);
-    }
-    // Fallback for unexpected price format
-    return "Price not available";
+      }).format(amount || 0); // Handle null/undefined amount
+    const p1 = typeof price1 === "number" ? price1 : null;
+    const p2 = typeof price2 === "number" ? price2 : null;
+    if (p1 !== null && p2 !== null) {
+      return p1 === p2
+        ? singleFormatter(p1)
+        : `${singleFormatter(Math.min(p1, p2))} - ${singleFormatter(
+            Math.max(p1, p2)
+          )}`;
+    } else if (p1 !== null) return singleFormatter(p1);
+    else if (p2 !== null) return singleFormatter(p2);
+    return "N/A";
   };
+
+  const getProductImageSrc = (imageFileName) => {
+    return imageFileName
+      ? `${IMAGES_BASE_URL}/${imageFileName}`
+      : PLACEHOLDER_IMG_PATH;
+  };
+
+  const handleProductCodeClick = (e, productId) => {
+    e.preventDefault();
+    navigate(`/products/update/${productId}`);
+  };
+
+  // --- Render Logic ---
+  let content;
+  if (error) {
+    content = (
+      <div
+        className="error-message"
+        style={{ color: "red", marginTop: "20px", textAlign: "center" }}
+      >
+        Error: {error}
+      </div>
+    );
+  } else if (isLoading && products.length === 0) {
+    // Show this only for initial load or if filters result in an empty list while loading
+    content = (
+      <div style={{ marginTop: "20px", textAlign: "center" }}>
+        Loading product data...
+      </div>
+    );
+  } else if (!isLoading && products.length === 0) {
+    content = (
+      <div
+        className="products-overview__no-results"
+        style={{ marginTop: "20px", textAlign: "center" }}
+      >
+        <p>No products found matching your criteria.</p>
+      </div>
+    );
+  } else {
+    // Products exist or are being updated (isLoading might be true for updates)
+    content = (
+      <>
+        {isLoading &&
+          products.length >
+            0 /* Show for updates if products already exist */ && (
+            <div
+              className="loading-indicator"
+              style={{ textAlign: "center", margin: "10px 0" }}
+            >
+              Updating list...
+            </div>
+          )}
+        <div className="products-overview__card-grid">
+          {products.map((product) => (
+            <div key={product.id} className="products-overview__product-card">
+              <div className="products-overview__card-image-container">
+                <img
+                  src={getProductImageSrc(product.imageFileName)}
+                  alt={product.name}
+                  className="products-overview__card-image"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = PLACEHOLDER_IMG_PATH;
+                  }}
+                />
+              </div>
+              <div className="products-overview__card-details">
+                <p className="products-overview__card-detail-item">
+                  <strong>Code :</strong>{" "}
+                  <a
+                    href={`/products/update/${product.id}`}
+                    onClick={(e) => handleProductCodeClick(e, product.id)}
+                    className="products-overview__product-code-link"
+                    title={`Update ${product.name}`}
+                  >
+                    {product.sku}
+                  </a>
+                </p>
+                <p className="products-overview__card-detail-item products-overview__card-name">
+                  <strong>Name:</strong> {product.name}
+                </p>
+                {/* <p className="products-overview__card-detail-item">
+                  <strong>Group:</strong> {product.group}
+                </p> */}
+                <p className="products-overview__card-detail-item">
+                  <strong>UOM:</strong> {product.uom}
+                </p>
+                {/* {product.hsn && (
+                  <p className="products-overview__card-detail-item">
+                    <strong>HSN:</strong> {product.hsn}
+                  </p>
+                )} */}
+                <p className="products-overview__card-detail-item products-overview__card-price">
+                  <strong>Price:</strong>{" "}
+                  {formatCurrency(product.wholesalePrice, product.retailPrice)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="products-overview__page-content">
       <h1>Products Details</h1>
-
       <div className="filter-controls-container-inline">
         <div className="products-overview__filter-item">
           <span className="products-overview__filter-label">
@@ -195,13 +279,17 @@ function Products() {
             className="products-overview__filter-select"
             value={selectedGroup}
             onChange={handleGroupChange}
+            disabled={isLoadingGroups}
           >
-            <option value="">All Groups</option>
-            {productGroupOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            <option value="">
+              {isLoadingGroups ? "Loading groups..." : "All Groups"}
+            </option>
+            {!isLoadingGroups &&
+              productGroupOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
           </select>
         </div>
         <div className="products-overview__filter-item">
@@ -210,9 +298,10 @@ function Products() {
             type="text"
             name="productSearch"
             className="products-overview__filter-input"
-            placeholder="Search products by name, SKU, group..."
+            placeholder="Search by name, SKU, group..."
             value={searchTerm}
             onChange={handleSearchChange}
+            autoComplete="off"
           />
         </div>
         <div className="add-new-action-group">
@@ -227,46 +316,8 @@ function Products() {
         </div>
       </div>
 
-      <div className="products-overview__card-grid">
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((product) => (
-            <div key={product.id} className="products-overview__product-card">
-              <div className="products-overview__card-image-container">
-                <img
-                  src={product.imageSrc}
-                  alt={product.name}
-                  className="products-overview__card-image"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = placeholderImg;
-                  }}
-                />
-              </div>
-              <div className="products-overview__card-details">
-                <p className="products-overview__card-detail-item">
-                  <strong>Code:</strong> {product.id}
-                </p>
-                <p className="products-overview__card-detail-item products-overview__card-name">
-                  <strong>Name:</strong> {product.name}
-                </p>
-                <p className="products-overview__card-detail-item">
-                  <strong>Group:</strong> {product.group}
-                </p>
-                <p className="products-overview__card-detail-item">
-                  <strong>UOM:</strong> {product.uom}
-                </p>
-                <p className="products-overview__card-detail-item products-overview__card-price">
-                  <strong>Price:</strong> {formatCurrency(product.price)}
-                </p>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="products-overview__no-results">
-            <p>No products match your current filters.</p>
-          </div>
-        )}
-      </div>
+      {/* Render the content (error, loading, no results, or product grid) */}
+      {content}
     </div>
   );
 }
