@@ -1,16 +1,17 @@
+// src/components/Vendors/VendorsAdd.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import "./AddCustomers.css";
+import "./VendorsAdd.css"; // Import the CSS file
 
-const API_BASE_URL = "https://localhost:7074/api";
+const API_BASE_URL = "https://localhost:7074/api"; // Assuming API base URL is the same
 
 const MessageModal = ({ message, onClose, type = "success" }) => {
   if (!message) return null;
   return (
-    <div className="ac-modal-overlay">
-      <div className={`ac-modal-content ${type}`}>
+    <div className="va-modal-overlay">
+      <div className={`va-modal-content ${type}`}>
         <p>{message}</p>
-        <button onClick={onClose} className="ac-modal-close-button">
+        <button onClick={onClose} className="va-modal-close-button">
           OK
         </button>
       </div>
@@ -18,7 +19,7 @@ const MessageModal = ({ message, onClose, type = "success" }) => {
   );
 };
 
-function AddCustomers() {
+function VendorsAdd() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,22 +30,19 @@ function AddCustomers() {
     isActive: false,
   });
 
-  const [customerGroupOptions, setCustomerGroupOptions] = useState([]);
-  const [isLoadingGroups, setIsLoadingGroups] = useState(true);
-  const [routeOptions, setRouteOptions] = useState([]);
-  const [isLoadingRoutes, setIsLoadingRoutes] = useState(true);
-  const [salesEmployeeOptions, setSalesEmployeeOptions] = useState([]);
-  const [isLoadingSalesEmployees, setIsLoadingSalesEmployees] = useState(true);
+  // State for dropdown options
+  const [vendorGroupOptions, setVendorGroupOptions] = useState([]);
+  const [isLoadingVendorGroups, setIsLoadingVendorGroups] = useState(true);
+  // Vendor Category states removed
   const [shippingTypeOptions, setShippingTypeOptions] = useState([]);
   const [isLoadingShippingTypes, setIsLoadingShippingTypes] = useState(true);
 
   const initialFormData = {
     code: "",
     name: "",
-    group: "",
+    group: "", // Represents Vendor Group
     balance: "",
-    route: "",
-    employee: "",
+    // 'category' field removed
     remarks: "",
     contactNumber: "",
     mailId: "",
@@ -70,7 +68,7 @@ function AddCustomers() {
       modalState.message.includes("Successfully");
     setModalState({ message: "", type: "info", isActive: false });
     if (wasSuccess) {
-      navigate("/customers", { state: { refreshCustomers: true } });
+      navigate("/vendor", { state: { refreshVendors: true } });
     }
   };
 
@@ -99,23 +97,17 @@ function AddCustomers() {
         setLoading(false);
       }
     },
-    [] // Assuming showModal is stable
+    []
   );
 
   useEffect(() => {
     fetchOptions(
-      "CustomerGroup",
-      setCustomerGroupOptions,
-      setIsLoadingGroups,
-      "customer groups"
+      "VendorGroup",
+      setVendorGroupOptions,
+      setIsLoadingVendorGroups,
+      "vendor groups"
     );
-    fetchOptions("Routes", setRouteOptions, setIsLoadingRoutes, "routes");
-    fetchOptions(
-      "SalesEmployee",
-      setSalesEmployeeOptions,
-      setIsLoadingSalesEmployees,
-      "sales employees"
-    );
+    // Removed fetchOptions for VendorCategory
     fetchOptions(
       "ShippingType",
       setShippingTypeOptions,
@@ -148,21 +140,22 @@ function AddCustomers() {
     setIsSubmitting(true);
     setError(null);
 
+    // Validations
     if (!formData.code.trim()) {
-      setError("Customer Code is required.");
-      showModal("Customer Code is required.", "error");
+      setError("Vendor Code is required.");
+      showModal("Vendor Code is required.", "error");
       setIsSubmitting(false);
       return;
     }
     if (!formData.name.trim()) {
-      setError("Customer Name is required.");
-      showModal("Customer Name is required.", "error");
+      setError("Vendor Name is required.");
+      showModal("Vendor Name is required.", "error");
       setIsSubmitting(false);
       return;
     }
     if (!formData.group) {
-      setError("Please select a Customer Group.");
-      showModal("Please select a Customer Group.", "error");
+      setError("Please select a Vendor Group.");
+      showModal("Please select a Vendor Group.", "error");
       setIsSubmitting(false);
       return;
     }
@@ -206,16 +199,16 @@ function AddCustomers() {
       return;
     }
 
-    const customerDataToSave = {
-      ...formData,
+    const vendorDataToSave = {
+      ...formData, // 'category' is no longer in formData
       balance: parseFloat(formData.balance) || 0,
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/Customer`, {
+      const response = await fetch(`${API_BASE_URL}/Vendor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(customerDataToSave),
+        body: JSON.stringify(vendorDataToSave),
       });
 
       if (!response.ok) {
@@ -274,16 +267,16 @@ function AddCustomers() {
         throw new Error(displayErrorMessage);
       }
 
-      showModal("Customer Added Successfully!", "success");
+      showModal("Vendor Added Successfully!", "success");
       setFormData(initialFormData);
     } catch (e) {
       if (!modalState.isActive) {
         showModal(
-          e.message || "Failed to save customer. Please try again.",
+          e.message || "Failed to save vendor. Please try again.",
           "error"
         );
       }
-      console.error("Failed to save customer (outer catch):", e.message);
+      console.error("Failed to save vendor (outer catch):", e.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -291,132 +284,132 @@ function AddCustomers() {
 
   const handleCancel = () => {
     if (!isSubmitting) {
-      navigate("/customers");
+      navigate("/vendor");
     }
   };
 
   const stillLoadingDropdowns =
-    isLoadingGroups ||
-    isLoadingRoutes ||
-    isLoadingSalesEmployees ||
+    isLoadingVendorGroups ||
+    // isLoadingVendorCategories removed
     isLoadingShippingTypes;
 
   if (
     stillLoadingDropdowns &&
-    !customerGroupOptions.length &&
-    !routeOptions.length &&
-    !salesEmployeeOptions.length &&
+    !vendorGroupOptions.length &&
+    // vendorCategoryOptions removed
     !shippingTypeOptions.length
   ) {
     return (
-      <div className="detail-page-container">Loading selection options...</div>
+      <div className="va-detail-page-container">
+        Loading selection options...
+      </div>
     );
   }
 
   return (
-    <div className="detail-page-container">
+    <div className="va-detail-page-container">
       <MessageModal
         message={modalState.message}
         onClose={closeModal}
         type={modalState.type}
       />
 
-      <div className="detail-page-header-bar">
-        <h1 className="detail-page-main-title">New Customer</h1>
+      <div className="va-detail-page-header-bar">
+        <h1 className="va-detail-page-main-title">New Vendor</h1>
       </div>
 
       {error && !modalState.isActive && (
         <div
-          className="form-error-message"
+          className="va-form-error-message"
           style={{ color: "red", marginBottom: "15px", textAlign: "center" }}
         >
           {error}
         </div>
       )}
 
-      <div className="customer-info-header">
+      <div className="va-vendor-info-header">
         {/* Column 1 */}
-        <div className="customer-info-column">
-          <div className="customer-info-field">
-            <label htmlFor="code">Customer Code :</label>
+        <div className="va-vendor-info-column">
+          <div className="va-vendor-info-field">
+            <label htmlFor="code">Vendor Code :</label>
             <input
               type="text"
               id="code"
               name="code"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.code}
               onChange={handleInputChange}
               required
             />
           </div>
-          <div className="customer-info-field">
+          <div className="va-vendor-info-field">
             <label htmlFor="name">Name :</label>
             <input
               type="text"
               id="name"
               name="name"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.name}
               onChange={handleInputChange}
               required
             />
           </div>
-          <div className="customer-info-field">
-            <label htmlFor="group">Customer group :</label>
+          <div className="va-vendor-info-field">
+            <label htmlFor="group">Vendor Group :</label>
             <select
               id="group"
               name="group"
-              className="form-input-styled"
+              className="va-form-input-styled va-form-select-styled"
               value={formData.group}
               onChange={handleInputChange}
-              disabled={isLoadingGroups}
+              disabled={isLoadingVendorGroups}
               required
             >
               <option value="">
-                {isLoadingGroups && !customerGroupOptions.length
+                {isLoadingVendorGroups && !vendorGroupOptions.length
                   ? "Loading..."
                   : "Select group"}
               </option>
-              {customerGroupOptions.map((option) => (
+              {vendorGroupOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
           </div>
-          <div className="customer-info-field">
+          <div className="va-vendor-info-field">
             <label htmlFor="contactNumber">Contact Number :</label>
-            <div className="compound-input-contact">
-              <span className="input-prefix-contact">+91</span>
+            <div className="va-compound-input-contact">
+              <span className="va-input-prefix-contact">+91</span>
               <input
                 type="tel"
                 id="contactNumber"
                 name="contactNumber"
-                className="form-input-styled form-input-contact-suffix"
+                className="va-form-input-styled va-form-input-contact-suffix"
                 value={formData.contactNumber}
                 onChange={handleInputChange}
                 placeholder="10 digits"
               />
             </div>
           </div>
-          <div className="customer-info-field">
+          <div className="va-vendor-info-field">
             <label htmlFor="mailId">Mail ID :</label>
             <input
               type="email"
               id="mailId"
               name="mailId"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.mailId}
               onChange={handleInputChange}
               required
             />
           </div>
-          <div className="customer-info-field">
+          <div className="va-vendor-info-field">
             <label htmlFor="shippingType">Shipping Type :</label>
             <select
               id="shippingType"
               name="shippingType"
-              className="form-input-styled"
+              className="va-form-input-styled va-form-select-styled"
               value={formData.shippingType}
               onChange={handleInputChange}
               disabled={isLoadingShippingTypes}
@@ -426,8 +419,7 @@ function AddCustomers() {
                 {isLoadingShippingTypes && !shippingTypeOptions.length
                   ? "Loading..."
                   : "Select Shipping Type"}
-              </option>{" "}
-              {/* THIS LINE WAS THE CULPRIT - CORRECTED */}
+              </option>
               {shippingTypeOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -438,69 +430,26 @@ function AddCustomers() {
         </div>
 
         {/* Column 2 */}
-        <div className="customer-info-column">
-          <div className="customer-info-field">
-            <label htmlFor="route">Route :</label>
-            <select
-              id="route"
-              name="route"
-              className="form-input-styled"
-              value={formData.route}
-              onChange={handleInputChange}
-              disabled={isLoadingRoutes}
-            >
-              <option value="">
-                {isLoadingRoutes && !routeOptions.length
-                  ? "Loading..."
-                  : "Select route"}
-              </option>
-              {routeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="customer-info-field">
-            <label htmlFor="employee">Sales Employee :</label>
-            <select
-              id="employee"
-              name="employee"
-              className="form-input-styled"
-              value={formData.employee}
-              onChange={handleInputChange}
-              disabled={isLoadingSalesEmployees}
-            >
-              <option value="">
-                {isLoadingSalesEmployees && !salesEmployeeOptions.length
-                  ? "Loading..."
-                  : "Select employee"}
-              </option>
-              {salesEmployeeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="customer-info-field">
+        <div className="va-vendor-info-column">
+          {/* Vendor Category dropdown removed */}
+          <div className="va-vendor-info-field">
             <label htmlFor="balance">Account Balance :</label>
             <input
               type="number"
               id="balance"
               name="balance"
               step="0.01"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.balance}
               onChange={handleInputChange}
             />
           </div>
-          <div className="customer-info-field">
+          <div className="va-vendor-info-field">
             <label htmlFor="remarks">Remarks :</label>
             <textarea
               id="remarks"
               name="remarks"
-              className="form-textarea-styled"
+              className="va-form-textarea-styled"
               rows={4}
               value={formData.remarks}
               onChange={handleInputChange}
@@ -509,95 +458,94 @@ function AddCustomers() {
         </div>
       </div>
 
-      <div className="detail-form-content-area">
-        <section className="form-section-card">
-          <h3 className="form-section-title">Customer Address Information</h3>
-          <div className="form-field-group form-field-group-inline">
+      <div className="va-detail-form-content-area">
+        <section className="va-form-section-card">
+          <h3 className="va-form-section-title">Vendor Address Information</h3>
+          <div className="va-form-field-group va-form-field-group-inline">
             <label htmlFor="address1">Address 1 :</label>
             <input
               type="text"
               id="address1"
               name="address1"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.address1 || ""}
               onChange={handleInputChange}
             />
           </div>
-          <div className="form-field-group form-field-group-inline">
+          <div className="va-form-field-group va-form-field-group-inline">
             <label htmlFor="address2">Address 2 :</label>
             <input
               type="text"
               id="address2"
               name="address2"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.address2 || ""}
               onChange={handleInputChange}
             />
           </div>
-          <div className="form-field-group form-field-group-inline">
+          <div className="va-form-field-group va-form-field-group-inline">
             <label htmlFor="street">Street :</label>
             <input
               type="text"
               id="street"
               name="street"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.street || ""}
               onChange={handleInputChange}
             />
           </div>
-          <div className="form-field-group form-field-group-inline">
+          <div className="va-form-field-group va-form-field-group-inline">
             <label htmlFor="postBox">Post Box :</label>
             <input
               type="text"
               inputMode="numeric"
               id="postBox"
               name="postBox"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.postBox}
               onChange={handleInputChange}
-              //placeholder="6 digits"
             />
           </div>
-          <div className="form-field-group form-field-group-inline">
+          <div className="va-form-field-group va-form-field-group-inline">
             <label htmlFor="city">City :</label>
             <input
               type="text"
               id="city"
               name="city"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.city || ""}
               onChange={handleInputChange}
             />
           </div>
-          <div className="form-field-group form-field-group-inline">
+          <div className="va-form-field-group va-form-field-group-inline">
             <label htmlFor="state">State :</label>
             <input
               type="text"
               id="state"
               name="state"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.state || ""}
               onChange={handleInputChange}
             />
           </div>
-          <div className="form-field-group form-field-group-inline">
+          <div className="va-form-field-group va-form-field-group-inline">
             <label htmlFor="country">Country :</label>
             <input
               type="text"
               id="country"
               name="country"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.country || ""}
               onChange={handleInputChange}
             />
           </div>
-          <div className="form-field-group form-field-group-inline">
+          <div className="va-form-field-group va-form-field-group-inline">
             <label htmlFor="gstin">GSTIN :</label>
             <input
               type="text"
               id="gstin"
               name="gstin"
-              className="form-input-styled"
+              className="va-form-input-styled"
               value={formData.gstin || ""}
               onChange={handleInputChange}
             />
@@ -605,18 +553,18 @@ function AddCustomers() {
         </section>
       </div>
 
-      <div className="detail-page-footer">
-        <div className="footer-actions-main">
+      <div className="va-detail-page-footer">
+        <div className="va-footer-actions-main">
           <button
-            className="footer-btn primary"
+            className="va-footer-btn primary"
             onClick={handleSave}
             disabled={isSubmitting || stillLoadingDropdowns}
           >
-            {isSubmitting ? "Adding..." : "Add Customer"}
+            {isSubmitting ? "Adding..." : "Add Vendor"}
           </button>
         </div>
         <button
-          className="footer-btn secondary"
+          className="va-footer-btn secondary"
           onClick={handleCancel}
           disabled={isSubmitting}
         >
@@ -627,4 +575,4 @@ function AddCustomers() {
   );
 }
 
-export default AddCustomers;
+export default VendorsAdd;

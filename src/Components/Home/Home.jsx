@@ -44,6 +44,13 @@ import ProductsUpdate from "./pages/ProductsUpdate";
 import ShippingType from "./pages/ShippingType";
 import UOM from "./pages/UOM";
 import UOMGroup from "./pages/UOMGroup";
+import APCreditNote from "./pages/APCreditNote";
+import ARCreditNote from "./pages/ARCreditNote";
+import Vendors from "./pages/Vendors";
+import VendorGroup from "./pages/VendorGroup";
+import Tax from "./pages/Tax";
+import VendorsAdd from "./pages/VendorsAdd";
+import VendorsUpdate from "./pages/VendorsUpdate";
 
 function Home() {
   const location = useLocation();
@@ -52,7 +59,7 @@ function Home() {
   const [activePage, setActivePage] = useState("Dashboard");
 
   const sidebarNavItems = [
-    "Customers",
+    "Business Partners",
     "Products",
     "Purchase",
     "Sales",
@@ -75,24 +82,29 @@ function Home() {
     if (
       path.startsWith("/purchaseorder") ||
       path.startsWith("/grpo") ||
+      path.startsWith("/apcreditnote") ||
       path.startsWith("/outgoingpayment") // Assuming this path exists
     ) {
       currentNavItem = "Purchase";
     } else if (
       path.startsWith("/salesorder") ||
       path.startsWith("/invoice") ||
+      path.startsWith("/arcreditnote") ||
       path.startsWith("/incomingpayment")
     ) {
       currentNavItem = "Sales";
     } else if (
+      path.startsWith("/vendor") ||
+      path.startsWith("/vendorgroup") ||
       path.startsWith("/customerrelationshipmgmt") ||
       path.startsWith("/customergroup") ||
       path.startsWith("/routess") || // Assuming this path exists
       path.startsWith("/salesemployee") || // Assuming this path exists
       path.startsWith("/shippingtype") ||
-      path.startsWith("/customers") // Catches /customers, /customers/add
+      path.startsWith("/customers") || // Catches /customers, /customers/add
+      path.startsWith("/tax")
     ) {
-      currentNavItem = "Customers";
+      currentNavItem = "Business Partners";
     } else if (
       path.startsWith("/productdetails") ||
       path.startsWith("/productsgroup") ||
@@ -105,6 +117,8 @@ function Home() {
       // Fallback for direct main item paths (e.g., /inventory, /reports)
       const matchedMain = sidebarNavItems.find((item) => {
         const itemPathSegment = item.toLowerCase().replace(/\s+/g, "");
+        if (item === "Business Partners") itemPathSegment = "customers"; // Special case for Business Partners
+
         return path.startsWith(`/${itemPathSegment}`);
       });
       if (matchedMain) {
@@ -116,7 +130,7 @@ function Home() {
       }
     }
     setActivePage(currentNavItem);
-  }, [location.pathname]); // Removed sidebarNavItems as it's constant within this scope
+  }, [location.pathname, sidebarNavItems]); // Removed sidebarNavItems as it's constant within this scope
 
   const handlePageChange = (pageName) => {
     // <<< MODIFIED: Handle "Dashboard" navigation
@@ -128,7 +142,10 @@ function Home() {
     let pathSegment = pageName.toLowerCase().replace(/\s+/g, "");
 
     // Specific mappings for submenu items to ensure correct navigation
+    if (pageName === "Vendor") pathSegment = "vendor";
+    if (pageName === "Vendor Group") pathSegment = "vendorgroup";
     if (pageName === "Purchase Order") pathSegment = "purchaseorder";
+    if (pageName === "Business Partners") pathSegment = "customers";
     if (pageName === "Sales Order") pathSegment = "salesorder";
     if (pageName === "Customer Relationship Mgmt")
       pathSegment = "customerrelationshipmgmt";
@@ -138,11 +155,15 @@ function Home() {
     if (pageName === "Routess") pathSegment = "routess"; // Ensure you have a route for '/route'
     if (pageName === "Sales Employee") pathSegment = "salesemployee"; // Ensure you have a route for '/salesemployee'
     if (pageName === "Shipping Type") pathSegment = "shippingtype";
+    if (pageName === "Tax") pathSegment = "tax";
     if (pageName === "Product Details") pathSegment = "productdetails";
     if (pageName === "Products Group") pathSegment = "productsgroup";
     if (pageName === "GRPO") pathSegment = "grpo";
+    if (pageName === "AP Credit Note") pathSegment = "apcreditnote";
+
     if (pageName === "Outgoing Payment") pathSegment = "outgoingpayment"; // Ensure you have a route
     if (pageName === "Invoice") pathSegment = "invoice";
+    if (pageName === "AR Credit Note") pathSegment = "arcreditnote"; // Ensure you have a route for AR Credit Note
     if (pageName === "Incoming Payment") pathSegment = "incomingpayment";
 
     // For main items without specific overrides, the default pathSegment works
@@ -164,6 +185,10 @@ function Home() {
           <Route path="/dashboard" element={<Navigate replace to="/" />} />{" "}
           {/* Optional: redirect /dashboard to / */}
           {/* Customer Routes */}
+          <Route path="/vendor" element={<Vendors />} />
+          <Route path="/vendor/add" element={<VendorsAdd />} />
+          <Route path="/vendor/update/:vendorId" element={<VendorsUpdate />} />
+          <Route path="/vendorgroup" element={<VendorGroup />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/add" element={<AddCustomers />} />
           <Route
@@ -179,6 +204,7 @@ function Home() {
           <Route path="/routess" element={<Routess />} />
           <Route path="/salesemployee" element={<SalesEmployee />} />
           <Route path="/shippingtype" element={<ShippingType />} />
+          <Route path="/tax" element={<Tax />} />
           {/* Assuming Routess handles Shipping Type */}
           {/* Product Routes */}
           <Route path="/products" element={<Products />} />
@@ -196,11 +222,13 @@ function Home() {
           <Route path="/purchaseorder/add" element={<PurchaseAdd />} />
           <Route path="/grpo" element={<GRPO />} />
           <Route path="/grpo/add" element={<GRPOadd />} />
+          <Route path="/apcreditnote" element={<APCreditNote />} />
           <Route path="/outgoingpayment" element={<OutgoingPayment />} />
           {/* Sales Routes */}
           <Route path="/salesorder" element={<Sales />} />
           <Route path="/salesorder/add" element={<SalesAdd />} />
           <Route path="/invoice" element={<Invoice />} />
+          <Route path="/arcreditnote" element={<ARCreditNote />} />
           <Route path="/incomingpayment" element={<IncomingPayment />} />
           {/* Other Main Routes */}
           <Route path="/inventory" element={<Inventory />} />
@@ -213,7 +241,7 @@ function Home() {
              The original Navigate to /customers is fine if / doesn't render Dashboard.
              But since / IS Dashboard, this specific Navigate might be redundant if Dashboard is the default.
           */}
-          <Route path="*" element={<Navigate replace to="/" />} />{" "}
+          <Route path="*" element={<Navigate replace to="/" />} />
           {/* Redirect any unmatched path to Dashboard */}
         </Routes>
       </main>

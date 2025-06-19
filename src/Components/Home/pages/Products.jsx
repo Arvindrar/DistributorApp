@@ -230,7 +230,7 @@ function Products() {
               </div>
               <div className="products-overview__card-details">
                 <p className="products-overview__card-detail-item">
-                  <strong>Code :</strong>{" "}
+                  <strong>Code :</strong>
                   <a
                     href={`/products/update/${product.id}`}
                     onClick={(e) => handleProductCodeClick(e, product.id)}
@@ -254,9 +254,14 @@ function Products() {
                     <strong>HSN:</strong> {product.hsn}
                   </p>
                 )} */}
+
                 <p className="products-overview__card-detail-item products-overview__card-price">
-                  <strong>Price:</strong>{" "}
-                  {formatCurrency(product.wholesalePrice, product.retailPrice)}
+                  <strong>Retail Price:</strong>{" "}
+                  {formatCurrency(product.retailPrice)}
+                </p>
+                <p className="products-overview__card-detail-item products-overview__card-price">
+                  <strong>Wholesale Price:</strong>{" "}
+                  {formatCurrency(product.wholesalePrice)}
                 </p>
               </div>
             </div>

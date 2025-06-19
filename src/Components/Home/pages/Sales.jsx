@@ -1,59 +1,98 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "./Sales.css"; // Import the new CSS for Sales
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import "./Sales.css"; // CRITICAL: Ensure Sales.css has ALL necessary styles
+import { API_BASE_URL } from "../../../config";
 
 function Sales() {
   const navigate = useNavigate();
-  const [salesOrderSearch, setSalesOrderSearch] = useState(""); // For SO Number input
-  const [customerNameSearch, setCustomerNameSearch] = useState(""); // For Customer Name input
+  const location = useLocation();
 
-  // Sample data - replace with actual data fetching
-  const [salesOrders, setSalesOrders] = useState([
-    {
-      id: 1,
-      customerCode: "CUST-001",
-      customerName: "Alpha Retailers",
-      soNumber: "SO2024-101",
-      date: "2025-01-20",
-      orderTotal: 7500.75,
-      remarks: "Awaiting payment.",
+  const [salesOrderSearch, setSalesOrderSearch] = useState("");
+  const [customerNameSearch, setCustomerNameSearch] = useState("");
+  const [salesOrders, setSalesOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const searchDebounceRef = useRef(null);
+
+  const fetchSalesOrders = useCallback(
+    async (currentSoSearch, currentCustSearch) => {
+      setIsLoading(true);
+      setError(null);
+      // console.log("Fetching Sales Orders with:", { currentSoSearch, currentCustSearch }); // For debugging
+      try {
+        const queryParams = new URLSearchParams();
+        if (currentSoSearch) {
+          queryParams.append("salesOrderNo", currentSoSearch);
+        }
+        if (currentCustSearch) {
+          queryParams.append("customerName", currentCustSearch);
+        }
+
+        const url = `${API_BASE_URL}/SalesOrders?${queryParams.toString()}`;
+        // console.log("Requesting URL:", url); // For debugging
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          let errorText = `HTTP error! status: ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorText += ` - ${
+              errorData.message || errorData.title || JSON.stringify(errorData)
+            }`;
+          } catch (jsonError) {
+            const plainErrorText = await response.text();
+            errorText += ` - ${
+              plainErrorText || "No further details available."
+            }`;
+          }
+          throw new Error(errorText);
+        }
+        const data = await response.json();
+        // --- DEBUGGING: Log the received data to inspect its structure ---
+        // console.log("Sales Orders Data Received:", data);
+        // data.forEach(so => console.log("Individual SO:", so, "Order Total:", so.orderTotal));
+        // --- END DEBUGGING ---
+        setSalesOrders(data);
+      } catch (e) {
+        console.error("Failed to fetch sales orders:", e);
+        setError(e.message || "Failed to load sales orders. Please try again.");
+        setSalesOrders([]);
+      } finally {
+        setIsLoading(false);
+      }
     },
-    {
-      id: 2,
-      customerCode: "CUST-002",
-      customerName: "Beta Goods Co.",
-      soNumber: "SO2024-102",
-      date: "2025-02-05",
-      orderTotal: 15200.0,
-      remarks: "Shipped.",
-    },
-    {
-      id: 3,
-      customerCode: "CUST-003",
-      customerName: "Gamma Services",
-      soNumber: "SO2024-103",
-      date: "2025-02-28",
-      orderTotal: 350.0,
-      remarks: "Delivered and paid.",
-    },
-    {
-      id: 4,
-      customerCode: "CUST-001", // Same customer, different SO
-      customerName: "Alpha Retailers",
-      soNumber: "SO2024-104",
-      orderTotal: 1200.0,
-      date: "2025-03-10",
-      remarks: "Processing.",
-    },
-    {
-      id: 5,
-      customerCode: "CUST-004",
-      customerName: "Delta Supplies",
-      soNumber: "SO2024-105",
-      orderTotal: 980.5,
-      date: "2025-04-01",
-      remarks: "New customer order.",
-    },
+    []
+  );
+
+  useEffect(() => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      fetchSalesOrders(salesOrderSearch, customerNameSearch);
+    }, 500);
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [salesOrderSearch, customerNameSearch, fetchSalesOrders]);
+
+  useEffect(() => {
+    if (location.state && location.state.refreshSalesOrders) {
+      fetchSalesOrders(salesOrderSearch, customerNameSearch);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [
+    location.state,
+    fetchSalesOrders,
+    navigate,
+    location.pathname,
+    salesOrderSearch,
+    customerNameSearch,
   ]);
 
   const handleSalesOrderSearchChange = (event) => {
@@ -65,65 +104,111 @@ function Sales() {
   };
 
   const handleAddSalesOrderClick = () => {
-    console.log("Add Sales Order button clicked");
-    navigate("/salesorder/add"); // Navigate to the "Add Sales Order" page
+    navigate("/salesorder/add");
   };
 
   const formatCurrency = (amount) => {
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount)) {
+      return new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 2,
+      }).format(0);
+    }
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
       minimumFractionDigits: 2,
-    }).format(amount);
+    }).format(numericAmount);
   };
 
-  const filteredSalesOrders = salesOrders.filter((so) => {
-    const soSearchTerm = salesOrderSearch.trim().toLowerCase();
-    const customerSearchTerm = customerNameSearch.trim().toLowerCase();
+  const handleRowClick = (soId) => {
+    navigate(`/salesorder/update/${soId}`);
+  };
 
-    const soNumberMatch = soSearchTerm
-      ? so.soNumber.toLowerCase().includes(soSearchTerm)
-      : true;
-
-    const customerNameMatch = customerSearchTerm
-      ? so.customerName.toLowerCase().includes(customerSearchTerm)
-      : true;
-
-    return soNumberMatch && customerNameMatch;
-  });
+  let tableBodyContent;
+  if (isLoading && salesOrders.length === 0) {
+    tableBodyContent = (
+      <tr>
+        <td colSpan="6" className="so-overview__no-data-cell">
+          Loading sales orders...
+        </td>
+      </tr>
+    );
+  } else if (error) {
+    tableBodyContent = (
+      <tr>
+        <td
+          colSpan="6"
+          className="so-overview__no-data-cell so-overview__error-cell"
+        >
+          Error: {error}
+        </td>
+      </tr>
+    );
+  } else if (!isLoading && salesOrders.length === 0) {
+    tableBodyContent = (
+      <tr>
+        <td colSpan="6" className="so-overview__no-data-cell">
+          No sales orders found matching your criteria.
+        </td>
+      </tr>
+    );
+  } else {
+    tableBodyContent = salesOrders.map((so) => (
+      <tr
+        key={so.id}
+        onClick={() => handleRowClick(so.id)}
+        className="so-overview__clickable-row"
+      >
+        <td>{so.salesOrderNo || "N/A"}</td>
+        <td>
+          {so.soDate ? new Date(so.soDate).toLocaleDateString("en-GB") : "N/A"}
+        </td>
+        <td>{so.customerCode || "N/A"}</td>
+        <td>{so.customerName || "N/A"}</td>
+        {/*
+          CRITICAL CHECK POINT:
+          Ensure 'so.orderTotal' matches the property name
+          being sent by your backend in the SalesOrderViewDto.
+          If your backend sends it as 'OrderTotal' (PascalCase),
+          and your frontend receives it as 'orderTotal' (camelCase due to default JSON serialization settings),
+          then 'so.orderTotal' is correct.
+          If backend serialization keeps PascalCase, it would be 'so.OrderTotal'.
+          VERIFY THIS IN BROWSER NETWORK TAB.
+        */}
+        <td>{formatCurrency(so.orderTotal)}</td>
+        <td>{so.salesRemarks || "N/A"}</td>
+      </tr>
+    ));
+  }
 
   return (
     <div className="so-overview__page-content">
-      {" "}
-      {/* Prefixed class */}
+      {/* Page Title - Can be styled as a header bar if needed */}
       <h1>Sales Order Overview</h1>
+
       <div className="so-overview__filter-controls">
-        {" "}
-        {/* Prefixed class */}
         <div className="so-overview__filter-item">
-          {" "}
-          {/* Prefixed class */}
           <label htmlFor="soSearch" className="so-overview__filter-label">
-            {" "}
-            {/* Prefixed class */}
             Sales Order :
           </label>
           <input
             type="text"
             id="soSearch"
             name="soSearch"
-            className="so-overview__filter-input" /* Prefixed class */
+            className="so-overview__filter-input"
             value={salesOrderSearch}
             onChange={handleSalesOrderSearchChange}
             placeholder="Search by SO Number..."
+            autoComplete="off"
           />
         </div>
         <div className="so-overview__filter-item">
-          {" "}
-          {/* Prefixed class */}
           <label
             htmlFor="customerNameSearch"
-            className="so-overview__filter-label" /* Prefixed class */
+            className="so-overview__filter-label"
           >
             Customer Name :
           </label>
@@ -131,19 +216,18 @@ function Sales() {
             type="text"
             id="customerNameSearch"
             name="customerNameSearch"
-            className="so-overview__filter-input" /* Prefixed class */
+            className="so-overview__filter-input"
             value={customerNameSearch}
             onChange={handleCustomerNameSearchChange}
             placeholder="Search by Customer Name..."
+            autoComplete="off"
           />
         </div>
+        {/* Create Button - Original Position */}
         <div className="so-overview__add-action-group">
-          {" "}
-          {/* Prefixed class */}
-          <span className="so-overview__add-label">Create</span>{" "}
-          {/* Prefixed class */}
+          <span className="so-overview__add-label">Create</span>
           <button
-            className="so-overview__add-button" /* Prefixed class */
+            className="so-overview__add-button"
             onClick={handleAddSalesOrderClick}
             title="Add New Sales Order"
           >
@@ -151,12 +235,13 @@ function Sales() {
           </button>
         </div>
       </div>
+
+      {isLoading && salesOrders.length > 0 && (
+        <div className="so-overview__loading-indicator">Updating list...</div>
+      )}
+
       <div className="so-overview__table-container">
-        {" "}
-        {/* Prefixed class */}
         <table className="so-overview__data-table">
-          {" "}
-          {/* Prefixed class */}
           <thead>
             <tr>
               <th>S.O Number</th>
@@ -167,28 +252,7 @@ function Sales() {
               <th>Remarks</th>
             </tr>
           </thead>
-          <tbody>
-            {filteredSalesOrders.length > 0 ? (
-              filteredSalesOrders.map((so) => (
-                <tr key={so.id}>
-                  <td>{so.soNumber}</td>
-                  <td>{so.date}</td>
-                  <td>{so.customerCode}</td>
-                  <td>{so.customerName}</td>
-                  <td>{formatCurrency(so.orderTotal)}</td>
-                  <td>{so.remarks}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="so-overview__no-data-cell">
-                  {" "}
-                  {/* Prefixed class, updated colSpan */}
-                  No sales orders match your search criteria.
-                </td>
-              </tr>
-            )}
-          </tbody>
+          <tbody>{tableBodyContent}</tbody>
         </table>
       </div>
     </div>

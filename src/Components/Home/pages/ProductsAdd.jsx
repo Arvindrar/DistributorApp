@@ -387,6 +387,30 @@ function ProductsAdd() {
                 ))}
               </select>
             </div>
+
+            <div className="pa-field-group">
+              <label htmlFor="uomGroup">UOM Group:</label>
+              <select
+                id="uomGroup"
+                name="uomGroup"
+                className="pa-select"
+                value={formData.uomGroup}
+                onChange={handleInputChange}
+                disabled={isLoadingUomGroups}
+              >
+                <option value="">
+                  {isLoadingUomGroups
+                    ? "Loading..."
+                    : "Select UOM Group (Optional)"}
+                </option>
+                {uomGroupOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* UOM Field Group - Hybrid Input - Revised Structure */}
             <div className="pa-field-group pa-uom-hybrid-container">
               {" "}
@@ -427,28 +451,7 @@ function ProductsAdd() {
                 )}
               </div>
             </div>
-            <div className="pa-field-group">
-              <label htmlFor="uomGroup">UOM Group:</label>
-              <select
-                id="uomGroup"
-                name="uomGroup"
-                className="pa-select"
-                value={formData.uomGroup}
-                onChange={handleInputChange}
-                disabled={isLoadingUomGroups}
-              >
-                <option value="">
-                  {isLoadingUomGroups
-                    ? "Loading..."
-                    : "Select UOM Group (Optional)"}
-                </option>
-                {uomGroupOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+
             <div className="pa-field-group">
               <label htmlFor="uploadImage">Upload Image:</label>
               <div className="pa-file-input-wrapper">

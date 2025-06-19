@@ -137,6 +137,7 @@ const ReportsIcon = ({ color = "currentColor", size = 20 }) => (
 // Helper to map item name to its icon component
 const getItemIcon = (itemName) => {
   switch (itemName) {
+    case "Business Partners":
     case "Customers":
       return <CustomersIcon />;
     case "Products":
@@ -156,14 +157,14 @@ const getItemIcon = (itemName) => {
 
 const Sidebar = ({ navItems, activePage, onPageChange }) => {
   const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
-  const [isCustomersOpen, setIsCustomersOpen] = useState(false);
+  const [isBusinessPartnersOpen, setIsBusinessPartnersOpen] = useState(false);
   const [isProductsOpen, setIsProductsOpen] = useState(false);
   const [isSalesOpen, setIsSalesOpen] = useState(false);
 
   // Close other submenus when one is opened (optional, but good UX)
   const toggleSubmenu = (setter, currentOpenState) => {
     setIsPurchaseOpen(false);
-    setIsCustomersOpen(false);
+    setIsBusinessPartnersOpen(false);
     setIsProductsOpen(false);
     setIsSalesOpen(false);
     setter(!currentOpenState); // Toggle the selected one
@@ -219,6 +220,12 @@ const Sidebar = ({ navItems, activePage, onPageChange }) => {
                     </li>
                     <li
                       className="submenu-item"
+                      onClick={() => onPageChange("AP Credit Note")}
+                    >
+                      AP Credit Note
+                    </li>
+                    <li
+                      className="submenu-item"
                       onClick={() => onPageChange("Outgoing Payment")}
                     >
                       Outgoing Payment
@@ -227,7 +234,7 @@ const Sidebar = ({ navItems, activePage, onPageChange }) => {
                 )}
               </React.Fragment>
             );
-          } else if (item === "Customers") {
+          } else if (item === "Business Partners") {
             return (
               <React.Fragment key={item}>
                 <li
@@ -235,17 +242,32 @@ const Sidebar = ({ navItems, activePage, onPageChange }) => {
                     activePage === item ? "active" : ""
                   }`}
                   onClick={() =>
-                    toggleSubmenu(setIsCustomersOpen, isCustomersOpen)
+                    toggleSubmenu(
+                      setIsBusinessPartnersOpen,
+                      isBusinessPartnersOpen
+                    )
                   }
                 >
                   {itemIcon} {/* Icon for Customers */}
                   <span className="sidebar-item-text">{item}</span>
                   <span className="submenu-arrow">
-                    {isCustomersOpen ? "▲" : "▼"}
+                    {isBusinessPartnersOpen ? "▲" : "▼"}
                   </span>
                 </li>
-                {isCustomersOpen && (
+                {isBusinessPartnersOpen && (
                   <div className="submenu">
+                    <li
+                      className="submenu-item"
+                      onClick={() => onPageChange("Vendor")}
+                    >
+                      Vendor Master Data
+                    </li>
+                    <li
+                      className="submenu-item"
+                      onClick={() => onPageChange("Vendor Group")}
+                    >
+                      Vendor Group
+                    </li>
                     <li
                       className="submenu-item"
                       onClick={() => onPageChange("Customer Relationship Mgmt")}
@@ -275,6 +297,12 @@ const Sidebar = ({ navItems, activePage, onPageChange }) => {
                       onClick={() => onPageChange("Shipping Type")}
                     >
                       Shipping Type
+                    </li>
+                    <li
+                      className="submenu-item"
+                      onClick={() => onPageChange("Tax")}
+                    >
+                      Tax
                     </li>
                   </div>
                 )}
@@ -355,6 +383,12 @@ const Sidebar = ({ navItems, activePage, onPageChange }) => {
                       onClick={() => onPageChange("Invoice")}
                     >
                       Invoice
+                    </li>
+                    <li
+                      className="submenu-item"
+                      onClick={() => onPageChange("AR Credit Note")}
+                    >
+                      AR Credit Note
                     </li>
                     <li
                       className="submenu-item"
