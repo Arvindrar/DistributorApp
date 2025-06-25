@@ -51,6 +51,8 @@ import VendorGroup from "./pages/VendorGroup";
 import Tax from "./pages/Tax";
 import VendorsAdd from "./pages/VendorsAdd";
 import VendorsUpdate from "./pages/VendorsUpdate";
+//import SalesView from "./pages/SalesView";
+import SalesUpdate from "./pages/SalesUpdate";
 
 function Home() {
   const location = useLocation();
@@ -227,6 +229,8 @@ function Home() {
           {/* Sales Routes */}
           <Route path="/salesorder" element={<Sales />} />
           <Route path="/salesorder/add" element={<SalesAdd />} />
+          <Route path="/salesorder/view/:soId" element={<SalesUpdate />} />
+          {/* This is the new route */}
           <Route path="/invoice" element={<Invoice />} />
           <Route path="/arcreditnote" element={<ARCreditNote />} />
           <Route path="/incomingpayment" element={<IncomingPayment />} />

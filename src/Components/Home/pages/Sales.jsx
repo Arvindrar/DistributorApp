@@ -19,7 +19,6 @@ function Sales() {
     async (currentSoSearch, currentCustSearch) => {
       setIsLoading(true);
       setError(null);
-      // console.log("Fetching Sales Orders with:", { currentSoSearch, currentCustSearch }); // For debugging
       try {
         const queryParams = new URLSearchParams();
         if (currentSoSearch) {
@@ -30,8 +29,6 @@ function Sales() {
         }
 
         const url = `${API_BASE_URL}/SalesOrders?${queryParams.toString()}`;
-        // console.log("Requesting URL:", url); // For debugging
-
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -50,10 +47,6 @@ function Sales() {
           throw new Error(errorText);
         }
         const data = await response.json();
-        // --- DEBUGGING: Log the received data to inspect its structure ---
-        // console.log("Sales Orders Data Received:", data);
-        // data.forEach(so => console.log("Individual SO:", so, "Order Total:", so.orderTotal));
-        // --- END DEBUGGING ---
         setSalesOrders(data);
       } catch (e) {
         console.error("Failed to fetch sales orders:", e);
@@ -123,8 +116,16 @@ function Sales() {
     }).format(numericAmount);
   };
 
-  const handleRowClick = (soId) => {
-    navigate(`/salesorder/update/${soId}`);
+  // REMOVED: handleRowClick function is no longer needed if rows aren't clickable for update.
+  // const handleRowClick = (soId) => {
+  //   navigate(`/salesorder/update/${soId}`);
+  // };
+
+  // This function correctly handles navigation for the S.O. Number link
+  const handleSalesOrderNumberLinkClick = (e, soId) => {
+    e.preventDefault();
+    // e.stopPropagation(); // Not strictly needed anymore if <tr> has no onClick, but harmless
+    navigate(`/salesorder/view/${soId}`);
   };
 
   let tableBodyContent;
@@ -157,27 +158,29 @@ function Sales() {
     );
   } else {
     tableBodyContent = salesOrders.map((so) => (
+      // MODIFIED: Removed onClick from <tr> and adjusted className if it implied clickability
       <tr
         key={so.id}
-        onClick={() => handleRowClick(so.id)}
-        className="so-overview__clickable-row"
+        // onClick={() => handleRowClick(so.id)} // <<<< REMOVED THIS LINE
+        // className="so-overview__clickable-row" // <<<< Consider renaming or removing if it solely implies clickability
+        // Keeping for now as it might affect other styling, but be aware.
+        // If you want hover effects, keep it. If not, remove if it's purely for click.
       >
-        <td>{so.salesOrderNo || "N/A"}</td>
+        <td>
+          <a
+            href={`/salesorder/view/${so.id}`}
+            onClick={(e) => handleSalesOrderNumberLinkClick(e, so.id)}
+            className="so-overview__table-data-link"
+            title={`View details for S.O. ${so.salesOrderNo}`}
+          >
+            {so.salesOrderNo || "N/A"}
+          </a>
+        </td>
         <td>
           {so.soDate ? new Date(so.soDate).toLocaleDateString("en-GB") : "N/A"}
         </td>
         <td>{so.customerCode || "N/A"}</td>
         <td>{so.customerName || "N/A"}</td>
-        {/*
-          CRITICAL CHECK POINT:
-          Ensure 'so.orderTotal' matches the property name
-          being sent by your backend in the SalesOrderViewDto.
-          If your backend sends it as 'OrderTotal' (PascalCase),
-          and your frontend receives it as 'orderTotal' (camelCase due to default JSON serialization settings),
-          then 'so.orderTotal' is correct.
-          If backend serialization keeps PascalCase, it would be 'so.OrderTotal'.
-          VERIFY THIS IN BROWSER NETWORK TAB.
-        */}
         <td>{formatCurrency(so.orderTotal)}</td>
         <td>{so.salesRemarks || "N/A"}</td>
       </tr>
@@ -186,7 +189,6 @@ function Sales() {
 
   return (
     <div className="so-overview__page-content">
-      {/* Page Title - Can be styled as a header bar if needed */}
       <h1>Sales Order Overview</h1>
 
       <div className="so-overview__filter-controls">
@@ -223,7 +225,6 @@ function Sales() {
             autoComplete="off"
           />
         </div>
-        {/* Create Button - Original Position */}
         <div className="so-overview__add-action-group">
           <span className="so-overview__add-label">Create</span>
           <button

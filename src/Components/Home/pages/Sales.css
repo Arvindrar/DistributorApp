@@ -218,3 +218,18 @@
   text-decoration: underline;
   color: #0056b3;
 }
+
+.so-overview__data-table td a, /* Prefixed */
+.so-overview__data-table td a.so-overview__table-data-link {
+  /* Prefixed */
+  color: #007bff; /* Standard link blue */
+  text-decoration: none; /* No underline by default */
+  font-weight: 500; /* Slightly bolder */
+}
+
+.so-overview__data-table td a:hover, /* Prefixed */
+.so-overview__data-table td a.so-overview__table-data-link:hover {
+  /* Prefixed */
+  text-decoration: underline; /* Underline on hover for clear affordance */
+  color: #0056b3; /* Darken link color on hover */
+}

@@ -872,3 +872,10 @@
   margin-left: 0;
   margin-top: 2px;
 }
+
+.so-add-item-field-error {
+  color: red;
+  font-size: 0.8em;
+  display: block;
+  margin-top: 3px;
+}

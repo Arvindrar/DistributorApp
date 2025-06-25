@@ -512,6 +512,8 @@ function SalesAdd() {
     setSearchTermModal("");
     setIsProductModalOpen(true);
   };
+
+  // In SalesAdd.jsx
   const handleSelectProductFromModal = (product) => {
     if (modalTargetItemId === null) return;
     setSalesItems((prevItems) =>
@@ -529,7 +531,11 @@ function SalesAdd() {
         return item;
       })
     );
-    calculateItemTotal(modalTargetItemId);
+    // calculateItemTotal(modalTargetItemId); // OLD
+    // Use setTimeout to ensure state is updated before recalculation
+    setTimeout(() => {
+      updateItemTaxAndTotal(modalTargetItemId); // NEW - This will correctly recalculate tax if a tax code is present
+    }, 0);
     setIsProductModalOpen(false);
     setModalTargetItemId(null);
   };
@@ -609,6 +615,11 @@ function SalesAdd() {
             "UOM is required for the selected product.";
           isValid = false;
         }
+        if (!item.warehouseLocation || !item.warehouseLocation.trim()) {
+          errors[`${itemErrorPrefix}_warehouseLocation`] =
+            "Warehouse is required.";
+          isValid = false;
+        }
       }); // <<<forEach CLOSING BRACE - THIS WAS THE POINT OF ERROR IN PREVIOUS RESPONSE
     } // <<< ELSE CLOSING BRACE - THIS WAS THE POINT OF ERROR IN PREVIOUS RESPONSE
 
@@ -618,15 +629,16 @@ function SalesAdd() {
 
   // --- Place this ENTIRE handleSave function inside your SalesAdd component ---
 
+  // From a previous successful version of SalesUpdate.jsx -> handleSave
+
+  // Inside SalesAdd.jsx
+
   const handleSave = async () => {
-    const isValid = validateForm(); // Call validateForm and store its result
-
+    const isValid = validateForm();
     if (!isValid) {
-      // Construct a more detailed error message for the modal from formErrors
+      // ... (your existing error modal logic from SalesAdd.jsx) ...
       let modalErrorMessage = "Please correct the following errors:\n";
-      const errorMessagesList = []; // Use a list to join later
-
-      // Collect header errors
+      const errorMessagesList = [];
       if (formErrors.customerCode)
         errorMessagesList.push(`- Customer Code: ${formErrors.customerCode}`);
       if (formErrors.customerName)
@@ -635,9 +647,6 @@ function SalesAdd() {
         errorMessagesList.push(`- S.O Date: ${formErrors.soDate}`);
       if (formErrors.deliveryDate)
         errorMessagesList.push(`- Delivery Date: ${formErrors.deliveryDate}`);
-      // Add other specific header errors if they exist in formErrors and you want them in the modal
-
-      // Collect item errors
       let itemErrorFound = false;
       salesItems.forEach((item, index) => {
         const itemPrefix = `Item ${index + 1}: `;
@@ -665,54 +674,38 @@ function SalesAdd() {
           );
           itemErrorFound = true;
         }
-        // Add checks for other specific item errors if you defined them in validateForm
+        if (formErrors[`item_${item.id}_warehouseLocation`]) {
+          errorMessagesList.push(
+            `- ${itemPrefix}${formErrors[`item_${item.id}_warehouseLocation`]}`
+          );
+          itemErrorFound = true;
+        }
       });
-
-      // General items error (e.g., "At least one item must be added")
-      if (formErrors.salesItems && !itemErrorFound) {
+      if (formErrors.salesItems && !itemErrorFound)
         errorMessagesList.push(`- ${formErrors.salesItems}`);
-      }
-
-      if (errorMessagesList.length > 0) {
+      if (errorMessagesList.length > 0)
         modalErrorMessage += errorMessagesList.join("\n");
-      } else {
-        // Fallback if somehow formErrors was populated but we didn't extract specific messages
-        modalErrorMessage =
-          "Please correct the errors marked in the form. Check highlighted fields.";
-      }
-
+      else modalErrorMessage = "Please correct the errors marked in the form.";
       showAppModal(modalErrorMessage, "error");
-      // Optional: Scroll to the first error field
-      // const firstErrorField = document.querySelector('.input-error, .so-add-table-error, .so-add-field-error');
-      // if (firstErrorField) {
-      //   firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // }
-      return; // Stop further execution
+      return;
     }
 
-    // If validation passes, proceed to save
     setIsSubmitting(true);
-    // setFormErrors({}); // Clear previous form errors if any were set by validateForm
-    // This is already done by validateForm itself at the end.
 
-    // 1. Prepare salesItems JSON string
-    const salesItemsJsonString = JSON.stringify(
-      salesItems.map((item) => ({
-        ProductCode: item.productCode,
-        ProductName: item.productName,
-        Quantity: parseFloat(item.quantity) || 0,
-        UOM: item.uom,
-        Price: parseFloat(item.price) || 0,
-        WarehouseLocation: item.warehouseLocation,
-        TaxCode: item.taxCode,
-        TaxPrice: parseFloat(item.taxPrice) || 0,
-        Total: parseFloat(item.total) || 0,
-      }))
-    );
+    const itemsPayloadForJson = salesItems.map((item) => ({
+      ProductCode: item.productCode,
+      ProductName: item.productName,
+      Quantity: parseFloat(item.quantity) || 0,
+      UOM: item.uom,
+      Price: parseFloat(item.price) || 0,
+      WarehouseLocation: item.warehouseLocation,
+      TaxCode: item.taxCode,
+      TaxPrice: item.taxPrice ? parseFloat(item.taxPrice) || 0 : null,
+      Total: parseFloat(item.total) || 0,
+    }));
+    const salesItemsJsonString = JSON.stringify(itemsPayloadForJson);
 
     const payload = new FormData();
-
-    // 2. Append individual fields that match SalesOrderCreateDto properties in C#
     payload.append("SalesOrderNo", formData.salesOrderNo);
     payload.append("CustomerCode", formData.customerCode);
     payload.append("CustomerName", formData.customerName);
@@ -725,119 +718,79 @@ function SalesAdd() {
     payload.append("SalesRemarks", formData.salesRemarks);
     payload.append("SalesEmployee", formData.salesEmployee);
 
-    // 3. Append the stringified sales items
+    // REMOVE THIS LINE as fileIdsToDelete is not part of SalesAdd state or logic:
+    // payload.append("FilesToDeleteJson", JSON.stringify(fileIdsToDelete));
+
     payload.append("SalesItemsJson", salesItemsJsonString);
 
-    // 4. Append files
     formData.uploadedFiles.forEach((file) => {
       payload.append("UploadedFiles", file, file.name);
     });
+
+    // For debugging:
+    // console.log("--- SalesAdd Payload being sent: ---");
+    // for (let pair of payload.entries()) {
+    //   console.log(pair[0]+ ': ' + pair[1]);
+    // }
+    // console.log("------------------------------------");
 
     try {
       const response = await fetch(`${API_BASE_URL}/SalesOrders`, {
         method: "POST",
         body: payload,
-        // 'Content-Type' is set automatically by the browser for FormData
       });
 
       if (!response.ok) {
-        let displayErrorMessage = `Error saving sales order. Status: ${response.status}`;
-        const contentType = response.headers.get("content-type");
-
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-          try {
-            const errorData = await response.json();
-            console.error("Backend Error Data:", errorData);
-
-            if (errorData) {
-              if (errorData.errors && typeof errorData.errors === "object") {
-                const fieldErrors = errorData.errors;
-                const messages = [];
-                for (const key in fieldErrors) {
-                  if (
-                    fieldErrors.hasOwnProperty(key) &&
-                    Array.isArray(fieldErrors[key])
-                  ) {
-                    let fieldName = key;
-                    if (key.toLowerCase().startsWith("items[")) {
-                      const match = key.match(/Items\[(\d+)\]\.(\w+)/i);
-                      if (match) {
-                        fieldName = `${match[2]} (Item ${
-                          parseInt(match[1]) + 1
-                        })`;
-                      }
-                    } else if (key.toLowerCase().startsWith("salesorderdto.")) {
-                      // Attempt to remove "salesOrderDto." prefix if backend sends it like that from model binding
-                      fieldName = key.substring("salesOrderDto.".length);
-                    }
-                    messages.push(
-                      `${fieldName}: ${fieldErrors[key].join(", ")}`
-                    );
-                  }
+        let displayErrorMessage = "Failed to create sales order.";
+        try {
+          const errorData = await response.json().catch(() => null);
+          // console.error("Backend error details (SalesAdd):", errorData);
+          if (errorData) {
+            if (errorData.errors) {
+              const messages = [];
+              for (const key in errorData.errors) {
+                /* ... (your detailed error parsing) ... */
+                const errorList = errorData.errors[key];
+                if (Array.isArray(errorList) && errorList.length > 0) {
+                  messages.push(
+                    `${key.replace(/([A-Z])/g, " $1").trim()}: ${errorList.join(
+                      ", "
+                    )}`
+                  );
                 }
-                if (messages.length > 0) {
-                  displayErrorMessage = messages.join("\n");
-                } else if (errorData.title) {
-                  displayErrorMessage = errorData.title;
-                }
-              } else if (
-                errorData.message &&
-                typeof errorData.message === "string"
-              ) {
-                displayErrorMessage = errorData.message;
-              } else if (
-                errorData.title &&
-                typeof errorData.title === "string"
-              ) {
-                displayErrorMessage = errorData.title;
-              } else if (
-                errorData.detail &&
-                typeof errorData.detail === "string"
-              ) {
-                displayErrorMessage = errorData.detail;
-              } else if (
-                typeof errorData === "string" &&
-                errorData.trim() !== ""
-              ) {
-                displayErrorMessage = errorData;
               }
+              if (messages.length > 0)
+                displayErrorMessage =
+                  "Please fix validation errors:\n" + messages.join("\n");
+            } else if (errorData.message) {
+              displayErrorMessage = errorData.message;
+            } else if (errorData.title) {
+              displayErrorMessage = errorData.title;
             }
-          } catch (e) {
-            console.error("Failed to parse API error response as JSON:", e);
-            try {
-              const textError = await response.text();
-              if (textError.trim()) displayErrorMessage = textError.trim();
-            } catch (textE) {
-              /* Keep original status code message */
-            }
-          }
-        } else {
-          // Non-JSON error response
-          try {
+          } else {
             const textError = await response.text();
             if (textError.trim()) displayErrorMessage = textError.trim();
-          } catch (textE) {
-            /* Keep original status code message */
           }
+        } catch (e) {
+          console.error("Error parsing backend error response in SalesAdd:", e);
+          displayErrorMessage = "Could not parse error response from server.";
         }
-        throw new Error(displayErrorMessage || response.statusText);
+        throw new Error(displayErrorMessage);
       }
 
       const responseData = await response.json();
       showAppModal(
-        `Sales Order ${
-          responseData.salesOrderNo ||
-          // responseData.id ||
-          ""
-        } created successfully!`,
+        `Sales Order ${responseData.salesOrderNo || ""} created successfully!`,
         "success"
       );
-
-      // setFormData(initialFormDataState); // Optionally reset form
-      // setSalesItems([initialEmptyItem(Date.now())]); // Optionally reset items
-      // Navigation is handled by closeAppModal
+      // Optionally reset form if navigation doesn't happen immediately or on modal close
+      // setFormData(initialFormDataState);
+      // setSalesItems([initialEmptyItem(Date.now())]);
     } catch (error) {
-      console.error("Error saving sales order (outer catch):", error);
+      console.error(
+        "Error saving sales order (outer catch - SalesAdd):",
+        error
+      );
       showAppModal(
         error.message ||
           "Failed to save sales order. An unknown error occurred.",
@@ -1042,8 +995,10 @@ function SalesAdd() {
                 id="salesOrderNo"
                 name="salesOrderNo"
                 className="form-input-styled"
-                value={formData.salesOrderNo}
+                value={formData.salesOrderNo || "Will be generated upon save"}
                 onChange={handleInputChange}
+                readOnly
+                disabled
               />
             </div>
             <div className="entry-header-field">
@@ -1247,12 +1202,24 @@ function SalesAdd() {
                       <td className="editable-cell">
                         <input
                           type="text"
-                          className="so-add__table-input"
+                          className={`so-add__table-input ${
+                            // Check if this class is what you use
+                            formErrors[`item_${item.id}_warehouseLocation`]
+                              ? "input-error"
+                              : "" // Apply 'input-error'
+                          }`}
                           value={item.warehouseLocation}
                           onChange={(e) =>
                             handleItemChange(e, item.id, "warehouseLocation")
                           }
                         />
+                        {formErrors[`item_${item.id}_warehouseLocation`] && (
+                          <div className="so-add-item-field-error">
+                            {" "}
+                            {/* Ensure CSS for this class exists */}
+                            {formErrors[`item_${item.id}_warehouseLocation`]}
+                          </div>
+                        )}
                       </td>
                       <td className="editable-cell tax-cell">
                         <input
@@ -1366,10 +1333,8 @@ function SalesAdd() {
       {/* Product Lookup Modal - FULL JSX ENSURED */}
       {isProductModalOpen && (
         <div className="modal-overlay product-lookup-modal-overlay">
-          {" "}
           {/* Ensure CSS for this exists */}
           <div className="modal-content product-lookup-modal">
-            {" "}
             {/* Ensure CSS for this exists */}
             <div className="modal-header">
               <h2>Select Product</h2>
@@ -1437,10 +1402,8 @@ function SalesAdd() {
       {/* --- NEW: Tax Code Lookup Modal --- */}
       {isTaxLookupModalOpen && (
         <div className="modal-overlay tax-lookup-modal-overlay">
-          {" "}
           {/* Use specific or shared CSS */}
           <div className="modal-content tax-lookup-modal">
-            {" "}
             {/* Use specific or shared CSS */}
             <div className="modal-header">
               <h2>Select Tax Code</h2>
@@ -1468,10 +1431,8 @@ function SalesAdd() {
               )}
               {!isLoadingTaxCodes && !taxCodesError && (
                 <div className="product-lookup-table-container">
-                  {" "}
                   {/* Can reuse styles */}
                   <table className="product-lookup-table">
-                    {" "}
                     {/* Can reuse styles */}
                     <thead>
                       <tr>
