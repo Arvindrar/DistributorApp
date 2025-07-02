@@ -3,6 +3,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import "./Sales.css"; // CRITICAL: Ensure Sales.css has ALL necessary styles
 import { API_BASE_URL } from "../../../config";
 
+import useDynamicPagination from "../../../hooks/useDynamicPagination";
+import Pagination from "../../Common/Pagination";
+
 function Sales() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -14,6 +17,11 @@ function Sales() {
   const [error, setError] = useState(null);
 
   const searchDebounceRef = useRef(null);
+
+  const pagination = useDynamicPagination(salesOrders, {
+    fixedItemsPerPage: 11,
+  });
+  const { currentPageData, currentPage, setCurrentPage } = pagination;
 
   const fetchSalesOrders = useCallback(
     async (currentSoSearch, currentCustSearch) => {
@@ -58,6 +66,11 @@ function Sales() {
     },
     []
   );
+
+  useEffect(() => {
+    // When filters change, always go back to the first page of results.
+    setCurrentPage(1);
+  }, [salesOrderSearch, customerNameSearch, setCurrentPage]);
 
   useEffect(() => {
     if (searchDebounceRef.current) {
@@ -157,7 +170,7 @@ function Sales() {
       </tr>
     );
   } else {
-    tableBodyContent = salesOrders.map((so) => (
+    tableBodyContent = currentPageData.map((so) => (
       // MODIFIED: Removed onClick from <tr> and adjusted className if it implied clickability
       <tr
         key={so.id}
@@ -256,6 +269,12 @@ function Sales() {
           <tbody>{tableBodyContent}</tbody>
         </table>
       </div>
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        onNext={pagination.nextPage}
+        onPrevious={pagination.prevPage}
+      />
     </div>
   );
 }

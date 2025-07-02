@@ -30,6 +30,9 @@
   background-color: #ffffff;
   border-bottom: 1px solid #e0e0e0;
   flex-shrink: 0;
+  position: sticky; /* Keep header sticky */
+  top: 0;
+  z-index: 100; /* Header z-index */
 }
 .so-update__detail-page-main-title {
   font-size: 1.5rem;
@@ -37,7 +40,6 @@
   color: #333333;
   margin: 0;
 }
-/* Optional: Display SO Number in header */
 .so-update__header-so-number {
   font-size: 1rem;
   color: #555;
@@ -75,6 +77,8 @@
   min-width: 120px;
   text-align: left;
 }
+
+/* Base input styling (reused by form-input-styled, input-icon-wrapper's input) */
 .so-update__form-input-styled,
 .so-update__form-select-styled,
 .so-update__form-textarea-styled {
@@ -85,18 +89,91 @@
   background-color: #fff;
   border: 1px solid #ccc;
   border-radius: 0.19rem;
-  border-bottom-color: #0a0a0a;
+  /* border-bottom-color: #0a0a0a; */ /* Consistent with SalesAdd if preferred */
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
   height: 27px;
   box-sizing: border-box;
-  width: 100%;
-  max-width: 400px;
-  min-width: 200px;
-  flex-grow: 1;
+  width: 100%; /* Takes full width of its direct parent */
 }
+
+/* Wrapper for input field with internal icon */
+.so-update__input-icon-wrapper {
+  position: relative;
+  display: flex;
+  flex-grow: 1;
+  max-width: 432px;
+}
+.so-update__form-input-styled.so-update__input-with-internal-icon {
+  width: 370px; /* Full width inside wrapper */
+}
+
+/* Lookup icon button in the header (BASE STYLE for the circle) */
+.so-update__header-lookup-indicator {
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  color: #555;
+  padding: 0;
+  line-height: 1;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+.so-update__header-lookup-indicator:hover {
+  border-color: #007bff;
+  color: #007bff;
+}
+
+/* Modifier for positioning the lookup icon INSIDE an input field */
+.so-update__header-lookup-indicator.so-update__internal {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  z-index: 2; /* Above input text area */
+}
+
+/* Customer Autocomplete specific styles */
+.so-update__autocomplete-container {
+  position: relative; /* Parent for the suggestions list if not using input-icon-wrapper */
+}
+.so-update__input-icon-wrapper .so-update__customer-suggestions-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-top: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  z-index: 90; /* Below header/footer, above page content, below modals */
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.so-update__input-icon-wrapper .so-update__customer-suggestions-list li {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.so-update__input-icon-wrapper .so-update__customer-suggestions-list li:hover,
+.so-update__input-icon-wrapper
+  .so-update__customer-suggestions-list
+  li.so-update__active-suggestion {
+  background-color: #f0f0f0;
+}
+
 .so-update__form-textarea-styled {
   height: auto;
-  min-height: 54px;
+  min-height: 54px; /* Approx 2 lines + padding */
 }
 .so-update__form-input-styled::placeholder,
 .so-update__form-textarea-styled::placeholder {
@@ -109,9 +186,9 @@
   color: #000;
   border-color: #333;
   outline: 0;
-  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 0.1rem rgba(0, 123, 255, 0.25); /* Focus glow */
 }
-.so-update__form-input-styled[readOnly], /* Style for readOnly SO Number */
+.so-update__form-input-styled[readOnly],
 .so-update__form-textarea-styled[readOnly] {
   background-color: #e9ecef;
   cursor: not-allowed;
@@ -119,7 +196,8 @@
 
 /* File Input Specific */
 .so-update__file-input-container {
-  align-items: flex-start;
+  align-items: flex-start; /* Label and button group align start */
+  flex-wrap: wrap; /* Allow file list to wrap below */
 }
 .so-update__form-input-file-hidden {
   display: none;
@@ -132,7 +210,7 @@
   border: 1px solid #ccc;
   border-radius: 0.19rem;
   cursor: pointer;
-  /* height: 27px; */
+  height: 27px; /* Match input height */
   box-sizing: border-box;
   line-height: 1.5;
   margin-right: 8px;
@@ -144,10 +222,11 @@
 .so-update__file-names-display-area {
   margin-top: 5px;
   font-size: 0.8rem;
-  max-height: 80px;
+  max-height: 80px; /* Limit height of file list */
   overflow-y: auto;
-  width: 100%;
-  padding-left: 5px;
+  width: 100%; /* Take full width below button if wrapped */
+  padding-left: 5px; /* Indent slightly */
+  box-sizing: border-box;
 }
 .so-update__files-subheading {
   font-size: 0.75rem;
@@ -160,13 +239,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 1px 0;
-  word-break: break-all;
+  word-break: break-all; /* Prevent long file names from breaking layout */
 }
 .so-update__file-name-display {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: calc(100% - 25px);
+  max-width: calc(100% - 25px); /* Space for remove button */
 }
 .so-update__file-name-display a {
   color: #007bff;
@@ -186,7 +265,7 @@
   flex-shrink: 0;
 }
 .so-update__existing-files-area {
-  margin-bottom: 8px;
+  margin-bottom: 8px; /* Space between existing and new files list */
 }
 
 /* --- Main Content Area for Table --- */
@@ -195,15 +274,15 @@
   padding: 20px 24px;
   padding-left: 50px;
   background-color: #ffffff;
-  overflow-y: auto;
-  margin-bottom: 10px;
+  overflow-y: auto; /* Allow content to scroll if page is short */
+  margin-bottom: 10px; /* Space before sticky footer */
 }
 .so-update__form-section-title {
   font-size: 1.2rem;
   font-weight: 600;
   color: #333333;
-  margin: 0;
-  padding-bottom: 8px;
+  margin: 0; /* Reset margin */
+  padding-bottom: 15px; /* Space below title */
 }
 
 /* --- Sales Order Update Items Table --- */
@@ -219,7 +298,7 @@
 .so-update__add-item-row-btn {
   padding: 6px 12px;
   font-size: 0.875rem;
-  background-color: #007bff;
+  background-color: #007bff; /* Green for add */
   color: white;
   border: none;
   border-radius: 4px;
@@ -231,12 +310,12 @@
 }
 .so-update__table-responsive-container {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: auto; /* Horizontal scroll for table */
   margin-bottom: 20px;
 }
 .so-update__items-table {
   width: 100%;
-  min-width: 900px;
+  min-width: 900px; /* Ensure table has a minimum width for all columns */
   border-collapse: collapse;
   font-size: 0.875rem;
   background-color: #ffffff;
@@ -244,24 +323,26 @@
 .so-update__items-table th,
 .so-update__items-table td {
   border: 1px solid #e0e0e0;
-  padding: 2px;
+  padding: 2px; /* Minimal padding for input cells */
   text-align: left;
   vertical-align: middle;
-  position: relative;
+  position: relative; /* For lookup icon positioning */
 }
 .so-update__items-table th {
   background-color: #f8f9fa;
   font-weight: 600;
   color: #333;
-  padding: 8px 6px;
+  padding: 8px 6px; /* More padding for headers */
+  white-space: nowrap; /* Prevent headers from wrapping */
 }
 .so-update__items-table tbody tr:hover .so-update__editable-cell {
-  background-color: #f9f9f9;
+  /* background-color: #f9f9f9; */ /* Optional hover effect */
 }
 .so-update__items-table .so-update__total-cell {
   padding: 8px 6px;
   text-align: right;
   min-width: 80px;
+  font-weight: 500;
 }
 .so-update__items-table .so-update__action-column-header {
   width: 60px;
@@ -272,6 +353,7 @@
   vertical-align: middle;
 }
 .so-update__table-input {
+  /* Input fields within the table */
   width: 100%;
   height: 100%;
   padding: 6px;
@@ -282,16 +364,16 @@
   outline: none;
 }
 .so-update__table-input:focus {
-  background-color: #eef6ff;
+  background-color: #eef6ff; /* Highlight on focus */
 }
 .so-update__quantity-input,
 .so-update__price-input,
-.so-update__tax-input,
-.so-update__uom-input {
+.so-update__tax-input {
   text-align: right;
 }
 .so-update__uom-input {
   max-width: 70px;
+  text-align: center;
 }
 .so-update__quantity-input {
   max-width: 80px;
@@ -303,7 +385,7 @@
   max-width: 90px;
 }
 
-/* Lookup Indicator (circle icon) */
+/* Lookup Indicator (circle icon) for TABLE cells */
 .so-update__lookup-indicator {
   position: absolute;
   top: 50%;
@@ -323,13 +405,14 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   padding: 0;
   line-height: 1;
-  z-index: 5;
+  z-index: 5; /* Above table cell input */
 }
 .so-update__lookup-indicator:hover {
   border-color: #007bff;
   color: #007bff;
 }
 .so-update__lookup-indicator-icon {
+  /* The '○' span itself */
   display: inline-block;
 }
 
@@ -355,14 +438,15 @@
   font-size: 0.9em;
 }
 .so-update__summary-input {
-  width: 100px;
+  width: 120px; /* Increased width */
   padding: 6px 10px;
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 0.9em;
   box-sizing: border-box;
-  background-color: #e9ecef;
+  background-color: #e9ecef; /* Read-only appearance */
   cursor: not-allowed;
+  text-align: right;
 }
 
 /* --- Footer --- */
@@ -373,13 +457,13 @@
   padding: 10px 24px;
   border-top: 1px solid #d9d9d9;
   background-color: #f8f9fa;
-  position: sticky;
+  position: sticky; /* Sticky footer */
   bottom: 0;
   left: 0;
   right: 0;
   width: 100%;
   box-sizing: border-box;
-  z-index: 100;
+  z-index: 100; /* Footer z-index, same as header */
   flex-shrink: 0;
 }
 .so-update__footer-actions-main {
@@ -404,56 +488,28 @@
   color: white;
   border-color: #007bff;
 }
-.so-update__footer-btn.so-update__primary:hover {
+.so-update__footer-btn.so-update__primary:hover:not(:disabled) {
   background-color: #0056b3;
   border-color: #0056b3;
 }
 .so-update__footer-btn.so-update__secondary {
-  background-color: red;
+  background-color: red; /* Grey for cancel/secondary */
   color: white;
   border-color: red;
 }
-.so-update__footer-btn.so-update__secondary:hover {
+.so-update__footer-btn.so-update__secondary:hover:not(:disabled) {
   background-color: red;
   border-color: red;
 }
 .so-update__footer-btn:disabled {
   background-color: #cccccc;
   border-color: #cccccc;
+  color: #666666;
   cursor: not-allowed;
+  opacity: 0.65;
 }
 
-/* --- Customer Autocomplete Styles --- */
-.so-update__autocomplete-container {
-  position: relative;
-}
-.so-update__customer-suggestions-list {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-top: none;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  z-index: 1000;
-  max-height: 200px;
-  overflow-y: auto;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-.so-update__customer-suggestions-list li {
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-.so-update__customer-suggestions-list li:hover,
-.so-update__customer-suggestions-list li.so-update__active-suggestion {
-  background-color: #f0f0f0;
-}
-
-/* --- Item Remove Button --- */
+/* --- Item Remove Button in Table --- */
 .so-update__remove-item-btn {
   background: none;
   border: none;
@@ -472,28 +528,36 @@
   color: #a71d2a;
 }
 
-/* --- Message Modal (prefixed so-update__) --- */
+/*
+-------------------------------------------------
+MODAL STYLES - CRITICAL FOR POSITIONING
+-------------------------------------------------
+*/
+
+/* --- Message Modal (so-update-modal-overlay) --- */
 .so-update-modal-overlay {
-  position: fixed;
+  /* THIS IS FOR THE "OK" MESSAGE MODAL */
+  position: fixed; /* Fixed position to overlay entire viewport */
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1050;
-  padding: 15px;
+  z-index: 1040; /* HIGHEST z-index, above everything else */
+  padding: 15px; /* Padding for smaller viewports */
 }
 .so-update-modal-content {
+  /* Content box for the "OK" message modal */
   background-color: white;
   padding: 25px 30px;
   border-radius: 6px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   min-width: 300px;
   max-width: 450px;
-  width: 90%;
+  width: 90%; /* Responsive width */
   text-align: center;
   box-sizing: border-box;
 }
@@ -503,13 +567,17 @@
 .so-update-modal-content.error {
   border-top: 5px solid #dc3545;
 }
+.so-update-modal-content.warning {
+  border-top: 5px solid #ffc107;
+} /* For concurrency or other warnings */
+
 .so-update-modal-content p {
   margin-top: 0;
   margin-bottom: 25px;
   font-size: 1.05rem;
   color: #333;
   line-height: 1.5;
-  white-space: pre-wrap;
+  white-space: pre-wrap; /* Allow newlines in messages */
 }
 .so-update-modal-close-button {
   padding: 9px 20px;
@@ -537,36 +605,48 @@
   background-color: #c82333;
   border-color: #bd2130;
 }
-
-/* --- Form Field Error Styles --- */
-.so-update__field-error {
-  color: #dc3545;
-  font-size: 0.75rem;
-  display: block;
+.so-update-modal-content.warning .so-update-modal-close-button {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
 }
-.so-update__field-error-shift {
-  padding-left: 130px;
-  margin-top: -8px;
-  margin-bottom: 4px;
-}
-.so-update__input-error {
-  border-color: #dc3545 !important;
-}
-.so-update__table-error {
-  color: #dc3545;
-  font-size: 0.85rem;
-  padding: 5px 0 10px 0;
-  text-align: center;
+.so-update-modal-content.warning .so-update-modal-close-button:hover {
+  background-color: #e0a800;
+  border-color: #d39e00;
 }
 
-/* --- Product/Tax Lookup Modal Styles (prefixed so-update__) --- */
+/* --- GENERIC LOOKUP MODAL STYLES (Product, Customer, Tax) --- */
+/* These use prefixed classes like .so-update__modal-overlay for lookup modals */
+.so-update__modal-overlay {
+  /* THIS IS FOR PRODUCT/CUSTOMER/TAX LOOKUP MODALS */
+  position: fixed; /* Fixed position to overlay entire viewport */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1040; /* High z-index, but below the MessageModal (1050) */
+  padding: 15px;
+}
+/* The .so-update__modal-content for LOOKUP modals */
 .so-update__modal-content.so-update__product-lookup-modal,
-.so-update__modal-content.so-update__tax-lookup-modal {
+.so-update__modal-content.so-update__tax-lookup-modal,
+.so-update__modal-content.so-update__customer-lookup-modal,
+.so-update__modal-content.so-update__uom-lookup-modal,
+.so-update__modal-content.so-update__warehouse-lookup-modal {
+  /* Added customer here */
+  background-color: #fff;
+  padding: 0; /* Header/body will have padding */
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   width: 90%;
-  max-width: 700px;
-  max-height: 80vh;
+  max-width: 700px; /* Default max-width for lookup modals */
   display: flex;
   flex-direction: column;
+  max-height: 80vh; /* Limit modal height */
 }
 .so-update__modal-header {
   display: flex;
@@ -595,7 +675,7 @@
 }
 .so-update__modal-body {
   padding: 20px;
-  overflow-y: auto;
+  overflow-y: auto; /* Scroll for long content */
   flex-grow: 1;
 }
 .so-update__modal-search-input {
@@ -607,45 +687,114 @@
   box-sizing: border-box;
   font-size: 0.9rem;
 }
+.so-update__modal-search-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.1rem rgba(0, 123, 255, 0.25);
+  outline: none;
+}
 .so-update__modal-error-text {
+  /* For errors inside lookup modals */
   color: #dc3545;
+  margin-bottom: 10px;
 }
 .so-update__product-lookup-table-container {
-  max-height: calc(80vh - 180px);
+  /* Reused for all lookup modal tables */
+  max-height: calc(
+    80vh - 180px
+  ); /* Adjust based on actual header/search/padding */
   overflow-y: auto;
   border: 1px solid #dee2e6;
   border-radius: 4px;
 }
 .so-update__product-lookup-table {
+  /* Reused for all lookup modal tables */
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
 .so-update__product-lookup-table th,
 .so-update__product-lookup-table td {
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid #dee2e6; /* Lighter border for rows */
   padding: 8px 10px;
   text-align: left;
   vertical-align: middle;
 }
+/* Optional: vertical borders for table cells if desired */
+/*
+.so-update__product-lookup-table td {
+  border-left: 1px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+}
+.so-update__product-lookup-table th:first-child,
+.so-update__product-lookup-table td:first-child { border-left: none; }
+.so-update__product-lookup-table th:last-child,
+.so-update__product-lookup-table td:last-child { border-right: none; }
+*/
 .so-update__product-lookup-table th {
   background-color: #f8f9fa;
   font-weight: 600;
-  position: sticky;
+  position: sticky; /* Sticky headers for scrollable table */
   top: 0;
-  z-index: 1;
+  z-index: 1; /* Above scrolling content */
+  /* border-top: 1px solid #dee2e6; */ /* Ensure top border is visible if container has border */
 }
 .so-update__product-lookup-table tbody tr:hover {
   background-color: #f1f1f1;
   cursor: pointer;
 }
 .so-update__product-lookup-table tbody tr td:last-child {
-  text-align: right;
+  /* text-align: right; */ /* Only if a specific column (like price) needs it */
 }
 .so-update__modal-no-data {
+  /* For "No data found" message in table */
   text-align: center;
   padding: 20px;
   color: #6c757d;
+}
+
+/* --- Form Field Error Styles --- */
+.so-update__field-error {
+  /* Generic error message style below header inputs */
+  color: #dc3545;
+  font-size: 0.75rem;
+  display: block;
+  width: 100%;
+}
+.so-update__field-error-shift {
+  /* For aligning error with input, after label */
+  padding-left: calc(120px + 10px); /* label min-width + gap */
+  margin-top: 3px; /* Space from input */
+}
+.so-update__input-error {
+  /* Class for the input field itself when in error */
+  border-color: #dc3545 !important;
+}
+.so-update__input-error:focus {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.1rem rgba(220, 53, 69, 0.25) !important;
+}
+
+/* Error message below table items */
+.so-update__item-field-error {
+  color: #dc3545;
+  font-size: 0.8em;
+  display: block;
+  margin-top: 2px;
+  padding-left: 5px;
+  text-align: left;
+  width: 100%;
+}
+
+/* General error message for the items table (e.g., "at least one item required") */
+.so-update__table-error {
+  color: #721c24; /* Dark red text */
+  background-color: #f8d7da; /* Light red background */
+  border: 1px solid #f5c6cb; /* Reddish border */
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-size: 0.9em;
 }
 
 /* --- Responsive Adjustments --- */
@@ -656,11 +805,13 @@
     gap: 15px;
     padding-left: 24px;
   }
-  .so-update__form-input-styled {
+  .so-update__input-icon-wrapper {
+    /* Input group takes full width */
     max-width: none;
   }
   .so-update__field-error-shift {
-    padding-left: 0;
+    padding-left: 0; /* Reset padding when label stacks */
+    margin-top: 3px;
   }
 }
 @media (max-width: 768px) {
@@ -678,10 +829,13 @@
   .so-update__entry-header-field label {
     min-width: auto;
     margin-bottom: 5px;
-    padding-top: 0;
   }
-  .so-update__form-input-styled {
-    width: 100%;
+  .so-update__input-icon-wrapper {
+    min-width: unset; /* Override min-width if it causes issues on very small screens */
+  }
+  .so-update__form-input-styled,
+  .so-update__form-textarea-styled {
+    /* width: 100%; is already set */
   }
   .so-update__product-details-header {
     flex-direction: column;
@@ -704,35 +858,10 @@
     margin-left: 0;
     width: 100%;
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-end; /* Align right within the row */
   }
   .so-update__summary-label {
-    flex-grow: 1;
+    flex-grow: 1; /* Allow label to push input */
     text-align: left;
   }
-}
-
-/* In SalesUpdate.css */
-/* ... existing styles ... */
-
-.so-update__item-field-error {
-  color: #d9534f; /* Danger color */
-  font-size: 0.8em; /* Smaller for table context */
-  display: block; /* Takes its own line below input */
-  margin-top: 2px;
-  padding-left: 5px; /* Align with input content if input has padding */
-  text-align: left; /* Ensure error message aligns left */
-  width: 100%; /* Take full width of the cell space for the message */
-}
-
-.so-update__table-error.so-update__general-item-error {
-  /* Updated class name */
-  color: #721c24;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  padding: 10px 15px;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  text-align: center;
-  font-size: 0.9em;
 }

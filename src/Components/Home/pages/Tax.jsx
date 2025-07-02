@@ -1,6 +1,8 @@
 // Tax.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import "./Tax.css"; // Ensure this CSS file is created
+import useDynamicPagination from "../../../hooks/useDynamicPagination"; // Adjust path as needed
+import Pagination from "../../Common/Pagination"; // Adjust path as needed
 
 const API_BASE_URL = "https://localhost:7074/api"; // <<<< ADJUST THIS TO YOUR BACKEND API PORT
 
@@ -69,6 +71,11 @@ const Tax = ({ onActiveTaxCodesChange }) => {
     type: "info",
     isActive: false,
   });
+  // --- Pagination Hook ---
+  const pagination = useDynamicPagination(taxDeclarations, {
+    fixedItemsPerPage: 4,
+  });
+  const { currentPageData, currentPage, setCurrentPage } = pagination;
 
   const showModal = (message, type = "info") => {
     setModalState({ message, type, isActive: true });
@@ -248,6 +255,7 @@ const Tax = ({ onActiveTaxCodesChange }) => {
       showModal("Tax entry added successfully!", "success");
       setFormData(initialFormState);
       fetchTaxData();
+      setCurrentPage(1); // Reset to page 1 after adding a new entry
     } catch (error) {
       console.error("Add error:", error);
       showModal(error.message || "Could not add tax entry.", "error");
@@ -378,9 +386,11 @@ const Tax = ({ onActiveTaxCodesChange }) => {
               </tr>
             )}
             {!isLoading &&
-              taxDeclarations.map((entry) => (
+              currentPageData.map((entry, index) => (
                 <tr key={entry.id}>
-                  <td className="taxd-td-sno">{entry.sNo}</td>
+                  <td className="taxd-td-sno">
+                    {(currentPage - 1) * 4 + index + 1}
+                  </td>
                   <td>{entry.taxCode}</td>
                   <td>{entry.taxDescription}</td>
                   {/* MODIFIED DATE DISPLAY */}
@@ -449,6 +459,14 @@ const Tax = ({ onActiveTaxCodesChange }) => {
           </tbody>
         </table>
       </div>
+
+      {/* --- ADD PAGINATION COMPONENT HERE --- */}
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        onNext={pagination.nextPage}
+        onPrevious={pagination.prevPage}
+      />
 
       <div className="taxd-create-section">
         <h3 className="taxd-create-title">Create New Tax Entry</h3>

@@ -1,13 +1,12 @@
-/* src/components/Home/pages/PurchaseAdd.css */
+/* src/pages/Purchase/PurchaseAdd.css */
 
-/* --- Global Page Layout (These styles can be shared if consistent across pages) --- */
+/* --- Global Page Layout --- */
 .detail-page-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background-color: #f0f2f5;
 }
-
 .detail-page-header-bar {
   display: flex;
   justify-content: space-between;
@@ -17,7 +16,6 @@
   border-bottom: 1px solid #e0e0e0;
   flex-shrink: 0;
 }
-
 .detail-page-main-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -25,47 +23,27 @@
   margin: 0;
 }
 
-.detail-header-actions .views-btn {
-  background-color: transparent;
-  border: 1px solid #007bff;
-  color: #007bff;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 0.875rem;
-  display: inline-flex;
-  align-items: center;
-}
-.detail-header-actions .views-btn svg path {
-  stroke: #007bff;
-}
-
-/* --- PO Header Form Specific Styles --- */
-.record-entry-header {
+/* --- Purchase Order Add Form Header Styles --- */
+.purchase-order-add__form-header {
   display: flex;
   justify-content: space-between;
   padding: 20px 24px;
-  padding-left: 50px;
   background-color: #ffffff;
   border-bottom: 1px solid #e0e0e0;
   gap: 24px;
   flex-shrink: 0;
 }
-
 .entry-header-column {
   display: flex;
   flex-direction: column;
   gap: 12px;
   flex: 1;
 }
-
 .entry-header-field {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
 .entry-header-field label {
   font-size: 0.875rem;
   color: #555555;
@@ -76,15 +54,74 @@
   text-align: left;
 }
 
-.record-entry-header .form-input-styled {
-  /* Styles for inputs within the PO header */
-  width: 100%;
-  max-width: 400px;
-  min-width: 200px;
-  flex-grow: 1;
+/* --- Base Input Styling --- */
+.form-input-styled,
+.form-textarea-styled {
+  padding: 4px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 0.19rem;
+  transition: all 0.15s ease-in-out;
+  height: 27px;
+  box-sizing: border-box;
+}
+.form-textarea-styled {
+  height: auto;
+  min-height: calc(27px * 2);
+  resize: vertical;
+}
+.form-input-styled:focus,
+.form-textarea-styled:focus {
+  color: #000;
+  background-color: #fff;
+  border-color: #333;
+  outline: 0;
+  box-shadow: 0 0 0 0.1rem rgba(0, 123, 255, 0.25);
+}
+.form-input-styled[readOnly] {
+  background-color: #f8f9fa;
+  cursor: pointer;
 }
 
-/* File Input Styling (can be generic if used elsewhere in this style) */
+/* --- Wrapper & Icon Styles for Header Inputs --- */
+.input-icon-wrapper {
+  position: relative;
+  display: flex;
+  flex-grow: 1;
+  max-width: 400px;
+  align-items: center;
+}
+.header-lookup-indicator.internal {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  z-index: 2;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.header-lookup-indicator:hover {
+  border-color: #007bff;
+}
+.lookup-indicator-icon {
+  font-size: 10px;
+  color: #555;
+}
+.header-lookup-indicator:hover .lookup-indicator-icon {
+  color: #007bff;
+}
+
+/* --- File Input Styles --- */
 .file-input-container {
   align-items: flex-start;
 }
@@ -100,102 +137,109 @@
   border-radius: 0.19rem;
   cursor: pointer;
   height: 27px;
-  box-sizing: border-box;
   line-height: 1.5;
   margin-right: 8px;
 }
 .browse-files-btn:hover {
   background-color: #e9ecef;
 }
+.file-names-display-area {
+  margin-top: 5px;
+  font-size: 0.8rem;
+  max-height: 60px;
+  overflow-y: auto;
+}
+.file-name-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0;
+}
 .file-name-display {
   font-size: 0.875rem;
   color: #555;
-  margin-top: 5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
 }
+.remove-file-btn {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0 5px;
+  line-height: 1;
+}
 
-/* --- Main Content Area (Shared if consistent) --- */
+/* --- Main Content Area & Items Table --- */
 .detail-form-content-area {
   flex-grow: 1;
   padding: 20px 24px;
-  padding-left: 50px; /* Consistent with header padding */
-  background-color: #ffffff; /* White background for this section */
-  overflow-y: auto; /* Scroll if content exceeds height */
-  margin-bottom: 10px; /* Space before footer */
+  background-color: #ffffff;
+  overflow-y: auto;
+  margin-bottom: 10px;
 }
-
-/* Shared form section title style */
 .form-section-title {
   font-size: 1.2rem;
   font-weight: 600;
   color: #333333;
-  margin: 0;
-  padding-bottom: 8px;
+  margin: 0 0 15px 0;
 }
-
-/* --- Purchase Order Items Table Section Specific Styles --- */
-.purchase-order-items-section {
-  /* This is the main wrapper for PO item table specific styles */
+.purchase-order-add__items-section {
   width: 100%;
 }
-
-.purchase-order-items-section .product-details-header {
+.product-details-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
 }
-
-.purchase-order-items-section .add-item-btn {
-  /* Uses .footer-btn and .primary styles for consistency */
+.add-item-row-btn {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
-
-.purchase-order-items-section .table-responsive-container {
+.add-item-row-btn:hover {
+  background-color: #0056b3;
+}
+.table-responsive-container {
   width: 100%;
   overflow-x: auto;
+  margin-bottom: 20px;
 }
-
-.purchase-order-items-section .po-items-table {
+.po-add__items-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
-  background-color: #ffffff; /* Table itself also white */
 }
-
-.purchase-order-items-section .po-items-table th,
-.purchase-order-items-section .po-items-table td {
+.po-add__items-table th,
+.po-add__items-table td {
   border: 1px solid #e0e0e0;
-  padding: 2px; /* Reduced padding for input cells */
+  padding: 2px;
   text-align: left;
   vertical-align: middle;
-  position: relative; /* For absolute positioning of lookup indicators */
 }
-
-.purchase-order-items-section .po-items-table th {
+.po-add__items-table th {
   background-color: #f8f9fa;
   font-weight: 600;
   color: #333;
-  padding: 8px 6px; /* Original padding for header */
+  padding: 8px 6px;
 }
-
-.purchase-order-items-section .po-items-table tbody tr:hover .editable-cell {
-  background-color: #f9f9f9;
-}
-
-.purchase-order-items-section .po-items-table .total-cell {
+.po-add__items-table .total-cell {
   padding: 8px 6px;
   text-align: right;
-  min-width: 80px;
+  font-weight: 500;
 }
-
-.purchase-order-items-section .po-items-table .editable-cell {
-  /* No extra padding, input will fill it */
+.po-add__items-table .editable-cell {
+  position: relative;
 }
-
-.purchase-order-items-section .po-table-input {
+.po-add__table-input {
   width: 100%;
   height: 100%;
   padding: 6px;
@@ -205,30 +249,21 @@
   box-sizing: border-box;
   outline: none;
 }
-.purchase-order-items-section .po-table-input:focus {
+.po-add__table-input:focus {
   background-color: #eef6ff;
 }
-
-.purchase-order-items-section .po-quantity-input,
-.purchase-order-items-section .po-price-input,
-.purchase-order-items-section .po-tax-input,
-.purchase-order-items-section .po-uom-input {
-  text-align: right;
+.po-add__table-input[readonly] {
+  cursor: pointer;
 }
-.purchase-order-items-section .po-uom-input {
-  max-width: 70px;
+.po-quantity-input,
+.po-price-input,
+.po-tax-input {
+  text-align: left;
 }
-.purchase-order-items-section .po-quantity-input {
-  max-width: 80px;
+.po-uom-input {
+  text-align: center;
 }
-.purchase-order-items-section .po-price-input {
-  max-width: 100px;
-}
-.purchase-order-items-section .po-tax-input {
-  max-width: 90px;
-}
-
-.purchase-order-items-section .po-lookup-indicator {
+.po-add__lookup-indicator {
   position: absolute;
   top: 50%;
   right: 5px;
@@ -247,61 +282,50 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   padding: 0;
   line-height: 1;
-  z-index: 10; /* Ensure it's above the input field */
+  z-index: 10;
 }
-.purchase-order-items-section .po-lookup-indicator:hover {
+.po-add__lookup-indicator:hover {
   border-color: #007bff;
   color: #007bff;
 }
-
-.lookup-indicator-icon {
-  display: inline-block;
+.action-column-header,
+.action-cell {
+  width: 60px;
+  text-align: center;
+}
+.action-cell .remove-item-btn {
+  /* Style as needed */
 }
 
-/* --- Base Input Styling (These can be shared if input fields look the same everywhere) --- */
-.form-input-styled,
-.form-select-styled,
-.form-textarea-styled {
-  /* Base styles for form inputs in the header */
-  padding: 4px 10px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #333;
-  background-color: #fff;
-  background-clip: padding-box;
-  border: 1px solid #ccc;
-  border-radius: 0.19rem;
-  border-bottom-color: #0a0a0a;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  height: 27px;
-  box-sizing: border-box;
+/* --- Tax Summary & Footer --- */
+.tax-summary-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 15px;
+  padding-right: 10px;
+  width: 100%;
 }
-.form-input-styled::placeholder,
-.form-textarea-styled::placeholder {
-  color: #777;
-  opacity: 1;
+.summary-item {
+  display: flex;
+  align-items: center;
+  margin-left: 25px;
 }
-.form-input-styled:focus,
-.form-select-styled:focus,
-.form-textarea-styled:focus {
-  color: #000;
-  background-color: #fff;
-  border-color: #333;
-  outline: 0;
-  box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
+.summary-item label {
+  margin-right: 8px;
+  font-weight: 500;
+  white-space: nowrap;
+  font-size: 0.9em;
 }
-.form-select-styled {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23333333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 16px 12px;
-  padding-right: 2.5rem;
+.summary-input {
+  width: 120px;
+  padding: 6px 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9em;
+  text-align: right;
+  background-color: #e9ecef;
 }
-
-/* --- Footer Styles (Shared if footer is consistent) --- */
 .detail-page-footer {
   display: flex;
   justify-content: space-between;
@@ -311,12 +335,6 @@
   background-color: #f8f9fa;
   position: sticky;
   bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  box-sizing: border-box;
-  z-index: 100;
-  flex-shrink: 0;
 }
 .footer-actions-main {
   display: flex;
@@ -328,12 +346,7 @@
   font-weight: 500;
   border-radius: 4px;
   cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1.5;
+  border: 1px solid;
 }
 .footer-btn.primary {
   background-color: #007bff;
@@ -342,142 +355,213 @@
 }
 .footer-btn.primary:hover {
   background-color: #0056b3;
-  border-color: #0056b3;
 }
-.footer-btn.link {
-  background-color: transparent;
-  color: #555;
-  border: none;
+.footer-btn.secondary {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
 }
-.footer-btn.link:hover {
-  color: #000;
-  text-decoration: underline;
+.footer-btn.secondary:hover {
+  background-color: #c82333;
 }
 
-/* --- Responsive Adjustments (These can be shared or page-specific) --- */
-@media (max-width: 992px) {
-  .record-entry-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 15px;
-    padding-left: 24px;
-  }
-  .record-entry-header .form-input-styled {
-    max-width: none;
-  } /* Allow full width in stacked column */
+/* --- Message Modal --- */
+.po-add-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
 }
-
-@media (max-width: 768px) {
-  .detail-page-header-bar,
-  .record-entry-header,
-  .detail-form-content-area,
-  .detail-page-footer {
-    padding-left: 15px;
-    padding-right: 15px;
-  }
-  .entry-header-field {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .entry-header-field label {
-    min-width: auto;
-    margin-bottom: 5px;
-  }
-  .record-entry-header .form-input-styled {
-    width: 100%;
-  } /* Inputs in header take full width */
-
-  .purchase-order-items-section .product-details-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  .file-input-container {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .browse-files-btn {
-    margin-bottom: 5px;
-  }
-  .file-name-display {
-    max-width: 100%;
-  }
+.po-add-modal-content {
+  background-color: white;
+  padding: 25px 30px;
+  border-radius: 6px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  min-width: 300px;
+  max-width: 450px;
+  text-align: center;
 }
-
-/* PurchaseAdd.css */
-
-/* ... your existing styles ... */
-
-.purchase-order-items-section {
-  /* Add or ensure this if you want the tax-summary-container
-     to align itself within this parent.
-     Alternatively, tax-summary-container can manage its own alignment.
-  */
+.po-add-modal-content.success {
+  border-top: 5px solid #007bff;
 }
-
-.table-responsive-container {
-  margin-bottom: 20px; /* Add some space between the table and the summary */
+.po-add-modal-content.error {
+  border-top: 5px solid #dc3545;
 }
-
-.tax-summary-container {
-  display: flex; /* Lays out summary items in a row */
-  justify-content: flex-end; /* Pushes all summary items to the right */
-  align-items: center; /* Vertically aligns items in the middle */
-  margin-top: 15px; /* Space above the summary section */
-  padding-right: 10px; /* Optional: Aligns nicely with table content if table has padding */
-  width: 100%; /* Ensures it takes full width to allow justify-content to work */
-  box-sizing: border-box;
+.po-add-modal-content p {
+  margin: 0 0 25px 0;
+  font-size: 1.05rem;
+  white-space: pre-wrap;
 }
-
-.summary-item {
-  display: flex; /* Lays out label and input in a row */
-  align-items: center; /* Vertically aligns label and input */
-  margin-left: 25px; /* Space between each summary group (e.g., "Qty Total" and "Tax Total") */
-}
-
-/* Optional: If you want no left margin on the very first item when it's pushed right */
-.summary-item:first-child {
-  /* If justify-content: flex-end is used on parent, this might not be strictly needed,
-     but can be useful if you have other items or change justification.
-     Adjust as per visual requirement. */
-  /* margin-left: 0; */
-}
-
-.summary-label {
-  margin-right: 8px; /* Space between label and its input */
-  font-weight: 500; /* Makes labels a bit more prominent */
-  white-space: nowrap; /* Prevents label text from wrapping */
-  font-size: 0.9em; /* Adjust as needed */
-}
-
-.summary-input {
-  width: 100px; /* Adjust width as needed */
-  padding: 6px 10px;
-  border: 1px solid #ced4da;
+.po-add-modal-close-button {
+  padding: 9px 20px;
+  font-size: 0.9rem;
   border-radius: 4px;
-  font-size: 0.9em; /* Adjust as needed */
-  box-sizing: border-box;
+  cursor: pointer;
+  border: 1px solid;
+  color: white;
+}
+.po-add-modal-content.success .po-add-modal-close-button {
+  background-color: #007bff;
+}
+.po-add-modal-content.error .po-add-modal-close-button {
+  background-color: #dc3545;
 }
 
-.summary-input:read-only {
-  background-color: #e9ecef; /* Visual cue for read-only fields */
-  cursor: not-allowed;
+/* --- Lookup Modals (Shared Styles) --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1040;
+  padding: 15px;
 }
-
-/* Ensure your table cells also have appropriate styling if they don't already */
-.po-items-table th,
-.po-items-table td {
-  padding: 8px 10px; /* Example padding, adjust as needed */
+.modal-content {
+  background-color: #fff;
+  padding: 0;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  cursor: pointer;
+  color: #888;
+}
+.modal-close-btn:hover {
+  color: #000;
+}
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+.modal-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.modal-search-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.1rem rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+.product-lookup-table-container {
+  max-height: calc(80vh - 180px);
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+}
+.product-lookup-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.product-lookup-table th,
+.product-lookup-table td {
+  border-bottom: 1px solid #dee2e6;
+  padding: 8px 10px;
   text-align: left;
 }
-
-.po-items-table .total-cell {
-  text-align: right; /* Often totals in tables are right-aligned */
+.product-lookup-table th {
+  background-color: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.product-lookup-table tbody tr:hover {
+  background-color: #f1f1f1;
+  cursor: pointer;
+}
+.modal-no-data {
+  text-align: center;
+  padding: 20px;
+  color: #777;
 }
 
-.add-item-row-btn {
-  background-color: #007bff;
-  color: white;
-  border-color: #007bff;
-  border-radius: 2px;
+/* --- Form Field Error Styles --- */
+.form-input-styled.input-error,
+.po-add__table-input.input-error {
+  border-color: #dc3545 !important;
+}
+
+/* Add these new rules to your PurchaseAdd.css file */
+
+.file-input-container {
+  /* This ensures the label stays at the top when file names appear */
+  align-items: flex-start;
+}
+
+.file-names-display-area {
+  margin-top: 5px;
+  font-size: 0.8rem;
+  max-height: 80px; /* Allow more space for multiple files */
+  overflow-y: auto;
+  width: 100%; /* Take up the available width in the column */
+  padding-left: 5px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.file-name-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 5px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.file-name-entry:last-child {
+  border-bottom: none;
+}
+
+.file-name-display {
+  font-size: 0.875rem;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px; /* Adjust as needed */
+}
+
+.remove-file-btn {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 0 5px;
+  line-height: 1;
+}
+
+.remove-file-btn:hover {
+  color: #a71d2a;
 }

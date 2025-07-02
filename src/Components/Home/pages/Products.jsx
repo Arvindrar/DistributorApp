@@ -7,6 +7,8 @@ import {
   IMAGES_BASE_URL,
   PLACEHOLDER_IMG_PATH,
 } from "../../../config";
+import useDynamicPagination from "../../../hooks/useDynamicPagination";
+import Pagination from "../../Common/Pagination";
 
 function Products() {
   const navigate = useNavigate();
@@ -22,6 +24,10 @@ function Products() {
   const [error, setError] = useState(null);
 
   const searchTimeoutRef = useRef(null); // Ref for debouncing search
+  const pagination = useDynamicPagination(products, {
+    fixedItemsPerPage: 12,
+  });
+  const { currentPageData, currentPage, setCurrentPage } = pagination;
 
   const fetchProductGroups = useCallback(async () => {
     setIsLoadingGroups(true);
@@ -92,6 +98,11 @@ function Products() {
   useEffect(() => {
     fetchProductGroups();
   }, [fetchProductGroups]);
+
+  useEffect(() => {
+    // When filters change, we should always go back to the first page of results.
+    setCurrentPage(1);
+  }, [selectedGroup, searchTerm, setCurrentPage]);
 
   // Debounced effect for fetching products based on searchTerm and selectedGroup
   useEffect(() => {
@@ -215,7 +226,7 @@ function Products() {
             </div>
           )}
         <div className="products-overview__card-grid">
-          {products.map((product) => (
+          {currentPageData.map((product) => (
             <div key={product.id} className="products-overview__product-card">
               <div className="products-overview__card-image-container">
                 <img
@@ -323,6 +334,12 @@ function Products() {
 
       {/* Render the content (error, loading, no results, or product grid) */}
       {content}
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        onNext={pagination.nextPage}
+        onPrevious={pagination.prevPage}
+      />
     </div>
   );
 }

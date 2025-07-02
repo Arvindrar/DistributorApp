@@ -1,682 +1,1001 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import "./PurchaseAdd.css"; // Import the CSS
+import "./PurchaseAdd.css";
+import {
+  API_PRODUCTS_ENDPOINT,
+  API_BASE_URL,
+  API_UOM_ENDPOINT,
+  API_WAREHOUSE_ENDPOINT,
+} from "../../../config";
 
-// Placeholder for a lookup icon
+// --- Reusable Components ---
+const MessageModal = ({ message, onClose, type = "info" }) => {
+  if (!message) return null;
+  return (
+    <div className="po-add-modal-overlay">
+      <div className={`po-add-modal-content ${type}`}>
+        <p style={{ whiteSpace: "pre-line" }}>{message}</p>
+        <button onClick={onClose} className="po-add-modal-close-button">
+          OK
+        </button>
+      </div>
+    </div>
+  );
+};
 const LookupIcon = () => (
   <span className="lookup-indicator-icon" title="Lookup value">
-    ○ {/* Unicode white circle */}
+    ○
   </span>
 );
-
-// Icons (Ideally, move these to a shared components/icons.jsx file)
-// ... (DropdownArrowIcon, UpArrowIcon - kept as is)
+const DeleteIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    fill="currentColor"
+    viewBox="0 0 16 16"
+    title="Remove Item"
+  >
+    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
+    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
+  </svg>
+);
 
 function PurchaseAdd() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const [formData, setFormData] = useState({
+  const initialFormDataState = {
     purchaseOrderNo: "",
     vendorCode: "",
     vendorName: "",
-    poDate: "",
-    dueDate: "",
-    documentDetails: "", // This might be used for general document notes
+    poDate: new Date().toISOString().split("T")[0],
+    deliveryDate: "",
     vendorRefNumber: "",
-    payToAddress: "",
+    shipToAddress: "",
     purchaseRemarks: "",
-    uploadedFiles: [], // MODIFIED: Store an array of files
-  });
-
+    uploadedFiles: [],
+  };
+  const [formData, setFormData] = useState(initialFormDataState);
   const initialEmptyItem = (id) => ({
-    id: id,
+    id,
     productCode: "",
     productName: "",
-    quantity: "",
+    quantity: "1",
     uom: "",
     price: "",
-    stockLocation: "",
+    warehouseLocation: "",
     taxCode: "",
-    taxPrice: "",
-    total: "",
-    showProductCodeLookup: false,
-    showProductNameLookup: false,
-    showTaxLookup: false,
+    taxPrice: "0",
+    total: "0.00",
   });
-
   const [purchaseItems, setPurchaseItems] = useState([
-    initialEmptyItem(1),
-    initialEmptyItem(2),
-    initialEmptyItem(3),
-    initialEmptyItem(4),
+    initialEmptyItem(Date.now()),
   ]);
+  const [modalState, setModalState] = useState({
+    message: "",
+    type: "info",
+    isActive: false,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+
+  const [allProducts, setAllProducts] = useState([]);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [productModalTargetId, setProductModalTargetId] = useState(null);
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [allVendors, setAllVendors] = useState([]);
+  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
+  const [vendorSearchTerm, setVendorSearchTerm] = useState("");
+  const [activeTaxCodes, setActiveTaxCodes] = useState([]);
+  const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
+  const [taxModalTargetId, setTaxModalTargetId] = useState(null);
+  const [taxSearchTerm, setTaxSearchTerm] = useState("");
+  const [allUOMs, setAllUOMs] = useState([]);
+  const [isUOMModalOpen, setIsUOMModalOpen] = useState(false);
+  const [uomModalTargetId, setUOMModalTargetId] = useState(null);
+  const [uomSearchTerm, setUomSearchTerm] = useState("");
+  const [allWarehouses, setAllWarehouses] = useState([]);
+  const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
+  const [warehouseModalTargetId, setWarehouseModalTargetId] = useState(null);
+  const [warehouseSearchTerm, setWarehouseSearchTerm] = useState("");
+
+  const showAppModal = (message, type = "info") =>
+    setModalState({ message, type, isActive: true });
+  const closeAppModal = () => {
+    const wasSuccess = modalState.type === "success";
+    setModalState({ message: "", type: "info", isActive: false });
+    if (wasSuccess)
+      navigate("/purchaseorder", { state: { refreshPurchaseOrders: true } });
+  };
+
+  const fetchDataForLookups = useCallback(
+    async (endpoint, setData, resourceName) => {
+      try {
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error(`${resourceName} API Error`);
+        const data = await response.json();
+        setData(
+          data.filter ? data.filter((item) => item.isActive !== false) : data
+        );
+      } catch (error) {
+        showAppModal(
+          `Error loading ${resourceName}: ${error.message}`,
+          "error"
+        );
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    fetchDataForLookups(API_PRODUCTS_ENDPOINT, setAllProducts, "Products");
+    fetchDataForLookups(`${API_BASE_URL}/Vendor`, setAllVendors, "Vendors");
+    fetchDataForLookups(
+      `${API_BASE_URL}/TaxDeclarations`,
+      setActiveTaxCodes,
+      "Tax Codes"
+    );
+    fetchDataForLookups(API_UOM_ENDPOINT, setAllUOMs, "UOMs");
+    fetchDataForLookups(API_WAREHOUSE_ENDPOINT, setAllWarehouses, "Warehouses");
+  }, [fetchDataForLookups]);
+
+  const updateItemTaxAndTotal = useCallback(
+    (itemIdToUpdate, items) => {
+      const updatedItems = items.map((item) => {
+        if (item.id === itemIdToUpdate) {
+          let tax = 0;
+          const qty = parseFloat(item.quantity) || 0;
+          const price = parseFloat(item.price) || 0;
+          const base = qty * price;
+          const taxCodeData = activeTaxCodes.find(
+            (tc) => tc.taxCode === item.taxCode
+          );
+          if (taxCodeData && taxCodeData.totalPercentage != null) {
+            tax = base * (parseFloat(taxCodeData.totalPercentage) / 100);
+          }
+          return {
+            ...item,
+            taxPrice: tax.toFixed(2),
+            total: (base + tax).toFixed(2),
+          };
+        }
+        return item;
+      });
+      setPurchaseItems(updatedItems);
+    },
+    [activeTaxCodes]
+  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (formErrors[name]) setFormErrors((prev) => ({ ...prev, [name]: null }));
+  };
+  const handleItemChange = (e, itemId, fieldName) => {
+    const { value } = e.target;
+    const newItems = purchaseItems.map((item) =>
+      item.id === itemId ? { ...item, [fieldName]: value } : item
+    );
+    setPurchaseItems(newItems);
+    if (["quantity", "price", "taxCode"].includes(fieldName)) {
+      updateItemTaxAndTotal(itemId, newItems);
+    }
   };
 
   const handleFileInputChange = (e) => {
-    const files = Array.from(e.target.files); // Convert FileList to Array
-    if (files.length > 0) {
-      setFormData((prev) => ({
-        ...prev,
-        // Append new files to existing ones, or replace if you prefer that behavior
-        // For appending:
-        uploadedFiles: [...prev.uploadedFiles, ...files],
-        // For replacing:
-        // uploadedFiles: files,
-      }));
-      console.log(
-        "Selected files:",
-        files.map((f) => f.name)
-      );
+    // Convert the FileList object to an array to work with it easily
+    const newFiles = Array.from(e.target.files);
+
+    if (newFiles.length > 0) {
+      setFormData((prev) => {
+        // Get the names of files already in the list to avoid duplicates
+        const existingFileNames = prev.uploadedFiles.map((f) => f.name);
+
+        // Filter out any new files that are already in the list
+        const uniqueNewFiles = newFiles.filter(
+          (file) => !existingFileNames.includes(file.name)
+        );
+
+        return {
+          ...prev,
+          uploadedFiles: [...prev.uploadedFiles, ...uniqueNewFiles],
+        };
+      });
     }
-    // It's important to clear the input value so the onChange event fires
-    // even if the same file(s) are selected again after removing some.
+
+    // Crucial for allowing the same file(s) to be selected again if needed
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const handleRemoveFile = (fileNameToRemove) => {
+  const handleRemoveFile = (fileName) =>
     setFormData((prev) => ({
       ...prev,
-      uploadedFiles: prev.uploadedFiles.filter(
-        (file) => file.name !== fileNameToRemove
-      ),
+      uploadedFiles: prev.uploadedFiles.filter((f) => f.name !== fileName),
     }));
+  const handleBrowseClick = () => fileInputRef.current.click();
+  const handleAddItemRow = () =>
+    setPurchaseItems((prev) => [...prev, initialEmptyItem(Date.now())]);
+  const handleRemoveItem = (id) =>
+    setPurchaseItems((prev) => prev.filter((item) => item.id !== id));
+
+  const openVendorModal = () => {
+    setVendorSearchTerm("");
+    setIsVendorModalOpen(true);
+  };
+  const openProductModal = (itemId) => {
+    setProductModalTargetId(itemId);
+    setProductSearchTerm("");
+    setIsProductModalOpen(true);
+  };
+  const openUOMModal = (itemId) => {
+    setUOMModalTargetId(itemId);
+    setUomSearchTerm("");
+    setIsUOMModalOpen(true);
+  };
+  const openWarehouseModal = (itemId) => {
+    setWarehouseModalTargetId(itemId);
+    setWarehouseSearchTerm("");
+    setIsWarehouseModalOpen(true);
+  };
+  const openTaxModal = (itemId) => {
+    setTaxModalTargetId(itemId);
+    setTaxSearchTerm("");
+    setIsTaxModalOpen(true);
   };
 
-  const handleBrowseClick = () => {
-    fileInputRef.current.click();
+  const handleSelectVendor = (vendor) => {
+    const address = [
+      vendor.address1,
+      vendor.address2,
+      vendor.street,
+      vendor.city,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    setFormData((prev) => ({
+      ...prev,
+      vendorCode: vendor.code,
+      vendorName: vendor.name,
+      shipToAddress: address,
+    }));
+    setIsVendorModalOpen(false);
   };
-
-  const handleItemChange = (e, itemId, fieldName) => {
-    const { value } = e.target;
-    setPurchaseItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === itemId ? { ...item, [fieldName]: value } : item
+  const handleSelectProduct = (product) => {
+    const newItems = purchaseItems.map((item) =>
+      item.id === productModalTargetId
+        ? {
+            ...item,
+            productCode: product.sku,
+            productName: product.name,
+            uom: product.uom,
+            price: product.wholesalePrice?.toString() ?? "0",
+          }
+        : item
+    );
+    setPurchaseItems(newItems);
+    updateItemTaxAndTotal(productModalTargetId, newItems);
+    setIsProductModalOpen(false);
+  };
+  const handleSelectUOM = (uom) => {
+    setPurchaseItems((prev) =>
+      prev.map((item) =>
+        item.id === uomModalTargetId ? { ...item, uom: uom.name } : item
       )
     );
-    if (
-      fieldName === "quantity" ||
-      fieldName === "price" ||
-      fieldName === "taxPrice" // Assuming taxPrice is the direct tax amount
-    ) {
-      calculateItemTotal(itemId); // Recalculate based on current item state
-    }
+    setIsUOMModalOpen(false);
   };
-
-  // Simplified calculateItemTotal, assumes values are already in the item object
-  const calculateItemTotal = (itemId) => {
-    setPurchaseItems((prevItems) =>
-      prevItems.map((item) => {
-        if (item.id === itemId) {
-          const numQuantity = parseFloat(item.quantity) || 0;
-          const numPrice = parseFloat(item.price) || 0;
-          const numTaxPrice = parseFloat(item.taxPrice) || 0; // Use taxPrice directly
-
-          // Total for one item = (Quantity * Price) + Tax Amount for that item
-          // If taxPrice is a rate, the calculation would be:
-          // const taxAmount = (numQuantity * numPrice) * (numTaxRate / 100);
-          // const calculatedTotal = (numQuantity * numPrice) + taxAmount;
-          // Assuming taxPrice IS the tax amount for the item:
-          const calculatedTotal = numQuantity * numPrice + numTaxPrice;
-
-          return { ...item, total: calculatedTotal.toFixed(2) };
-        }
-        return item;
-      })
+  const handleSelectWarehouse = (wh) => {
+    setPurchaseItems((prev) =>
+      prev.map((item) =>
+        item.id === warehouseModalTargetId
+          ? { ...item, warehouseLocation: wh.code }
+          : item
+      )
     );
+    setIsWarehouseModalOpen(false);
   };
-
-  const toggleLookupIndicator = (itemId, fieldName, show) => {
-    setPurchaseItems((prevItems) =>
-      prevItems.map((item) => {
-        if (item.id === itemId) {
-          const lookupsToShow = {
-            showProductCodeLookup: false,
-            showProductNameLookup: false,
-            showTaxLookup: false, // General tax lookup, or remove if taxCode/taxPrice are separate
-          };
-          // Dynamically set the specific lookup field to true
-          if (fieldName === "ProductCode")
-            lookupsToShow.showProductCodeLookup = show;
-          else if (fieldName === "ProductName")
-            lookupsToShow.showProductNameLookup = show;
-          else if (fieldName === "taxCode" || fieldName === "taxPrice")
-            lookupsToShow.showTaxLookup = show; // Or specific ones
-
-          return { ...item, ...lookupsToShow };
-        }
-        // Hide lookups in other rows when a new one is focused/blurred
-        return {
-          ...item,
-          showProductCodeLookup: false,
-          showProductNameLookup: false,
-          showTaxLookup: false,
-        };
-      })
+  const handleSelectTax = (tax) => {
+    const newItems = purchaseItems.map((item) =>
+      item.id === taxModalTargetId ? { ...item, taxCode: tax.taxCode } : item
     );
+    setPurchaseItems(newItems);
+    updateItemTaxAndTotal(taxModalTargetId, newItems);
+    setIsTaxModalOpen(false);
   };
 
-  const handleLookupClick = (itemId, fieldType) => {
-    console.log(`Lookup clicked for item ${itemId}, field: ${fieldType}`);
-    // Implement your lookup logic here (e.g., open modal)
-    // For now, just hide the indicator
-    // Note: The specific lookup state (e.g., showProductCodeLookup) will be set to false by onBlur
-    // or when another lookup is focused. So, we might not need to explicitly hide it here
-    // unless the modal interaction doesn't trigger blur.
+  const validateForm = () => {
+    /* ... */ return {};
+  };
+  const handleSave = async () => {
+    /* ... */
   };
 
-  const handleSave = () => {
-    const dataToSend = new FormData(); // Use a different variable name to avoid confusion with component's formData state
-
-    // Append non-file formData fields
-    for (const key in formData) {
-      if (key !== "uploadedFiles" && formData[key] !== null) {
-        dataToSend.append(key, formData[key]);
-      }
-    }
-
-    // Append each uploaded file
-    // The backend will receive these as multiple form parts with the same key "uploadedFiles"
-    if (formData.uploadedFiles && formData.uploadedFiles.length > 0) {
-      formData.uploadedFiles.forEach((file) => {
-        dataToSend.append("uploadedFiles", file, file.name); // Key can be e.g., "attachments[]" or just "attachments"
-      });
-    }
-
-    const validPurchaseItems = purchaseItems.filter(
-      (item) =>
-        item.productCode || item.productName || item.quantity || item.price
-    );
-    dataToSend.append("purchaseItems", JSON.stringify(validPurchaseItems));
-
-    console.log("Saving new purchase order data (FormData entries):");
-    for (let [key, value] of dataToSend.entries()) {
-      if (value instanceof File) {
-        console.log(key, value.name, value.type, value.size);
-      } else {
-        console.log(key, value);
-      }
-    }
-    // navigate('/purchases'); // Uncomment when API call is ready
-  };
-
-  const handleCancel = () => {
-    navigate("/purchaseorder");
-  };
-
-  const handleAddItemRow = () => {
-    setPurchaseItems((prevItems) => [
-      ...prevItems,
-      initialEmptyItem(
-        prevItems.length > 0 ? Math.max(...prevItems.map((i) => i.id)) + 1 : 1
-      ),
-    ]);
-  };
-
-  // Calculate totals for summary (basic example)
-  const productTotalSummary = purchaseItems
-    .reduce(
-      (sum, item) =>
-        sum + (parseFloat(item.quantity) || 0) * (parseFloat(item.price) || 0),
-      0
-    )
+  const grandTotalSummary = purchaseItems
+    .reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
     .toFixed(2);
   const taxTotalSummary = purchaseItems
     .reduce((sum, item) => sum + (parseFloat(item.taxPrice) || 0), 0)
     .toFixed(2);
-  const grandTotalSummary = purchaseItems
-    .reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0)
-    .toFixed(2);
+  const productTotalSummary = (
+    parseFloat(grandTotalSummary) - parseFloat(taxTotalSummary)
+  ).toFixed(2);
 
   return (
-    <div className="detail-page-container">
-      {/* Top Header Bar */}
-      <div className="detail-page-header-bar">
-        <h1 className="detail-page-main-title">Create Purchase Order</h1>
-      </div>
+    <>
+      <MessageModal
+        message={modalState.message}
+        onClose={closeAppModal}
+        type={modalState.type}
+      />
 
-      {/* New Purchase Info Header */}
-      <div className="record-entry-header">
-        <div className="entry-header-column">
-          {/* Vendor Code, Name, Ref No, Pay to Address, Remarks */}
-          <div className="entry-header-field">
-            <label htmlFor="vendorCode">Vendor Code :</label>
-            <input
-              type="text"
-              id="vendorCode"
-              name="vendorCode"
-              className="form-input-styled"
-              value={formData.vendorCode}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="entry-header-field">
-            <label htmlFor="vendorName">Vendor Name :</label>
-            <input
-              type="text"
-              id="vendorName"
-              name="vendorName"
-              className="form-input-styled"
-              value={formData.vendorName}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="entry-header-field">
-            <label htmlFor="vendorRefNumber">Vendor Ref No. :</label>
-            <input
-              type="text"
-              id="vendorRefNumber"
-              name="vendorRefNumber"
-              className="form-input-styled"
-              value={formData.vendorRefNumber}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="entry-header-field">
-            <label htmlFor="payToAddress">Pay to Address :</label>
-            <textarea // Changed to textarea for more space
-              id="payToAddress"
-              name="payToAddress"
-              className="form-textarea-styled" // Use textarea specific style
-              rows="2"
-              value={formData.payToAddress}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <div className="entry-header-field">
-            <label htmlFor="purchaseRemarks">Remarks :</label>
-            <textarea // Changed to textarea
-              id="purchaseRemarks"
-              name="purchaseRemarks"
-              className="form-textarea-styled" // Use textarea specific style
-              rows="2"
-              value={formData.purchaseRemarks}
-              onChange={handleInputChange}
-            />
-          </div>
-        </div>
-        <div className="entry-header-column">
-          {/* PO Number, PO Date, Due Date, Attachment */}
-          <div className="entry-header-field">
-            <label htmlFor="purchaseOrderNo">PO Number :</label>
-            <input
-              type="text"
-              id="purchaseOrderNo"
-              name="purchaseOrderNo"
-              className="form-input-styled"
-              value={formData.purchaseOrderNo}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="entry-header-field">
-            <label htmlFor="poDate">PO Date :</label>
-            <input
-              type="date"
-              id="poDate"
-              name="poDate"
-              className="form-input-styled"
-              value={formData.poDate}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="entry-header-field">
-            <label htmlFor="dueDate">Due Date :</label>
-            <input
-              type="date"
-              id="dueDate"
-              name="dueDate"
-              className="form-input-styled"
-              value={formData.dueDate}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          <div className="entry-header-field file-input-container">
-            <label htmlFor="uploadImageFile">Attachment(s) :</label>
-            <input
-              type="file"
-              id="uploadImageFile"
-              name="uploadImageFile" // This name doesn't matter much when using ref
-              ref={fileInputRef}
-              className="form-input-file-hidden"
-              onChange={handleFileInputChange}
-              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt" // Specify accepted file types
-              multiple // MODIFIED: Allow multiple file selection
-            />
-            <button
-              type="button"
-              className="browse-files-btn"
-              onClick={handleBrowseClick}
-            >
-              Browse files
-            </button>
-            {/* MODIFIED: Display multiple file names */}
-            {formData.uploadedFiles.length > 0 && (
-              <div className="file-names-display-area">
-                {formData.uploadedFiles.map((file, index) => (
-                  <div key={index} className="file-name-entry">
-                    <span className="file-name-display">{file.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFile(file.name)}
-                      className="remove-file-btn"
-                      title="Remove file"
-                    >
-                      × {/* Simple 'x' for remove */}
-                    </button>
-                  </div>
-                ))}
+      {isVendorModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Select Vendor</h2>
+              <button
+                className="modal-close-btn"
+                onClick={() => setIsVendorModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <input
+                type="text"
+                placeholder="Search by Code or Name..."
+                className="modal-search-input"
+                value={vendorSearchTerm}
+                onChange={(e) => setVendorSearchTerm(e.target.value)}
+                autoFocus
+              />
+              <div className="product-lookup-table-container">
+                <table className="product-lookup-table">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Name</th>
+                      <th>Address</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allVendors
+                      .filter(
+                        (v) =>
+                          v.name
+                            .toLowerCase()
+                            .includes(vendorSearchTerm.toLowerCase()) ||
+                          v.code
+                            .toLowerCase()
+                            .includes(vendorSearchTerm.toLowerCase())
+                      )
+                      .map((vendor) => (
+                        <tr
+                          key={vendor.id}
+                          onClick={() => handleSelectVendor(vendor)}
+                        >
+                          <td>{vendor.code}</td>
+                          <td>{vendor.name}</td>
+                          <td>
+                            {[vendor.address1, vendor.city]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+      {isProductModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Select Product</h2>
+              <button
+                className="modal-close-btn"
+                onClick={() => setIsProductModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <input
+                type="text"
+                placeholder="Search by SKU or Name..."
+                className="modal-search-input"
+                value={productSearchTerm}
+                onChange={(e) => setProductSearchTerm(e.target.value)}
+                autoFocus
+              />
+              <div className="product-lookup-table-container">
+                <table className="product-lookup-table">
+                  <thead>
+                    <tr>
+                      <th>SKU</th>
+                      <th>Name</th>
+                      <th>Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allProducts
+                      .filter(
+                        (p) =>
+                          p.name
+                            .toLowerCase()
+                            .includes(productSearchTerm.toLowerCase()) ||
+                          p.sku
+                            .toLowerCase()
+                            .includes(productSearchTerm.toLowerCase())
+                      )
+                      .map((product) => (
+                        <tr
+                          key={product.id}
+                          onClick={() => handleSelectProduct(product)}
+                        >
+                          <td>{product.sku}</td>
+                          <td>{product.name}</td>
+                          <td>{product.wholesalePrice?.toFixed(2) ?? "N/A"}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Product Details Table Section */}
-      <div className="detail-form-content-area">
-        <div className="purchase-order-items-section">
-          <div className="product-details-header">
-            <h3 className="form-section-title">Product Details</h3>
+      {isUOMModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Select UOM</h2>
+              <button
+                className="modal-close-btn"
+                onClick={() => setIsUOMModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <input
+                type="text"
+                placeholder="Search UOM..."
+                className="modal-search-input"
+                value={uomSearchTerm}
+                onChange={(e) => setUomSearchTerm(e.target.value)}
+                autoFocus
+              />
+              <div className="product-lookup-table-container">
+                <table className="product-lookup-table">
+                  <thead>
+                    <tr>
+                      <th>UOM Name</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allUOMs
+                      .filter((u) =>
+                        u.name
+                          .toLowerCase()
+                          .includes(uomSearchTerm.toLowerCase())
+                      )
+                      .map((uom) => (
+                        <tr key={uom.id} onClick={() => handleSelectUOM(uom)}>
+                          <td>{uom.name}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isWarehouseModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Select Warehouse</h2>
+              <button
+                className="modal-close-btn"
+                onClick={() => setIsWarehouseModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <input
+                type="text"
+                placeholder="Search Warehouse..."
+                className="modal-search-input"
+                value={warehouseSearchTerm}
+                onChange={(e) => setWarehouseSearchTerm(e.target.value)}
+                autoFocus
+              />
+              <div className="product-lookup-table-container">
+                <table className="product-lookup-table">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Name</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allWarehouses
+                      .filter(
+                        (w) =>
+                          w.name
+                            .toLowerCase()
+                            .includes(warehouseSearchTerm.toLowerCase()) ||
+                          w.code
+                            .toLowerCase()
+                            .includes(warehouseSearchTerm.toLowerCase())
+                      )
+                      .map((wh) => (
+                        <tr
+                          key={wh.id}
+                          onClick={() => handleSelectWarehouse(wh)}
+                        >
+                          <td>{wh.code}</td>
+                          <td>{wh.name}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isTaxModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Select Tax Code</h2>
+              <button
+                className="modal-close-btn"
+                onClick={() => setIsTaxModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <input
+                type="text"
+                placeholder="Search Tax Code..."
+                className="modal-search-input"
+                value={taxSearchTerm}
+                onChange={(e) => setTaxSearchTerm(e.target.value)}
+                autoFocus
+              />
+              <div className="product-lookup-table-container">
+                <table className="product-lookup-table">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Description</th>
+                      <th>Rate (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeTaxCodes
+                      .filter((t) =>
+                        t.taxCode
+                          .toLowerCase()
+                          .includes(taxSearchTerm.toLowerCase())
+                      )
+                      .map((tax) => (
+                        <tr key={tax.id} onClick={() => handleSelectTax(tax)}>
+                          <td>{tax.taxCode}</td>
+                          <td>{tax.taxDescription}</td>
+                          <td>{tax.totalPercentage?.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ... Other modals (UOM, Warehouse, Tax) follow the same structure ... */}
+
+      <div className="detail-page-container">
+        <div className="detail-page-header-bar">
+          <h1 className="detail-page-main-title">Create Purchase Order</h1>
+        </div>
+
+        <div className="purchase-order-add__form-header">
+          <div className="entry-header-column">
+            <div className="entry-header-field">
+              <label htmlFor="vendorCode">Vendor Code:</label>
+              <div className="input-icon-wrapper">
+                <input
+                  type="text"
+                  id="vendorCode"
+                  value={formData.vendorCode}
+                  className={`form-input-styled ${
+                    formErrors.vendorCode ? "input-error" : ""
+                  }`}
+                  readOnly
+                  onClick={openVendorModal}
+                />
+                <button
+                  type="button"
+                  className="header-lookup-indicator internal"
+                  onClick={openVendorModal}
+                >
+                  <LookupIcon />
+                </button>
+              </div>
+            </div>
+            <div className="entry-header-field">
+              <label htmlFor="vendorName">Vendor Name:</label>
+              <div className="input-icon-wrapper">
+                <input
+                  type="text"
+                  id="vendorName"
+                  value={formData.vendorName}
+                  className={`form-input-styled ${
+                    formErrors.vendorName ? "input-error" : ""
+                  }`}
+                  readOnly
+                  onClick={openVendorModal}
+                />
+                <button
+                  type="button"
+                  className="header-lookup-indicator internal"
+                  onClick={openVendorModal}
+                >
+                  <LookupIcon />
+                </button>
+              </div>
+            </div>
+            <div className="entry-header-field">
+              <label htmlFor="vendorRefNumber">Vendor Ref No:</label>
+              <input
+                type="text"
+                id="vendorRefNumber"
+                name="vendorRefNumber"
+                value={formData.vendorRefNumber}
+                onChange={handleInputChange}
+                className="form-input-styled"
+              />
+            </div>
+            <div className="entry-header-field">
+              <label htmlFor="shipToAddress">Ship to Address:</label>
+              <textarea
+                id="shipToAddress"
+                name="shipToAddress"
+                value={formData.shipToAddress}
+                onChange={handleInputChange}
+                className="form-textarea-styled"
+                rows="2"
+                readOnly
+              />
+            </div>
+            <div className="entry-header-field">
+              <label htmlFor="purchaseRemarks">Remarks:</label>
+              <textarea
+                id="purchaseRemarks"
+                name="purchaseRemarks"
+                value={formData.purchaseRemarks}
+                onChange={handleInputChange}
+                className="form-textarea-styled"
+                rows="2"
+              />
+            </div>
+          </div>
+          <div className="entry-header-column">
+            <div className="entry-header-field">
+              <label htmlFor="purchaseOrderNo">P.O Number:</label>
+              <input
+                type="text"
+                id="purchaseOrderNo"
+                value={formData.purchaseOrderNo || "Generated on save"}
+                className="form-input-styled"
+                readOnly
+                disabled
+              />
+            </div>
+            <div className="entry-header-field">
+              <label htmlFor="poDate">P.O Date:</label>
+              <input
+                type="date"
+                id="poDate"
+                name="poDate"
+                value={formData.poDate}
+                onChange={handleInputChange}
+                className={`form-input-styled ${
+                  formErrors.poDate ? "input-error" : ""
+                }`}
+              />
+            </div>
+            <div className="entry-header-field">
+              <label htmlFor="deliveryDate">Delivery Date:</label>
+              <input
+                type="date"
+                id="deliveryDate"
+                name="deliveryDate"
+                value={formData.deliveryDate}
+                onChange={handleInputChange}
+                className={`form-input-styled ${
+                  formErrors.deliveryDate ? "input-error" : ""
+                }`}
+              />
+            </div>
+            <div className="entry-header-field file-input-container">
+              <label htmlFor="uploadFilesInput">Attachment(s):</label>
+              <input
+                type="file"
+                id="uploadFilesInput"
+                ref={fileInputRef}
+                className="form-input-file-hidden"
+                onChange={handleFileInputChange}
+                multiple
+              />
+              <button
+                type="button"
+                className="browse-files-btn"
+                onClick={handleBrowseClick}
+              >
+                Browse files
+              </button>
+              {formData.uploadedFiles.length > 0 && (
+                <div className="file-names-display-area">
+                  {formData.uploadedFiles.map((f, i) => (
+                    <div key={f.name + i} className="file-name-entry">
+                      <span className="file-name-display" title={f.name}>
+                        {f.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(f.name)}
+                        className="remove-file-btn"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="detail-form-content-area">
+          <div className="purchase-order-add__items-section">
+            <div className="product-details-header">
+              <h3 className="form-section-title">Product Details</h3>
+              <button
+                type="button"
+                className="add-item-row-btn"
+                onClick={handleAddItemRow}
+              >
+                + Add Row
+              </button>
+            </div>
+            <div className="table-responsive-container">
+              <table className="po-add__items-table">
+                <thead>
+                  <tr>
+                    <th>Product Code</th>
+                    <th>Product Name</th>
+                    <th>Quantity</th>
+                    <th>UOM</th>
+                    <th>Price</th>
+                    <th>Warehouse</th>
+                    <th>Tax Code</th>
+                    <th>Tax Price</th>
+                    <th>Total</th>
+                    <th className="action-column-header">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {purchaseItems.map((item) => (
+                    <tr key={item.id}>
+                      <td className="editable-cell">
+                        <div className="po-add-input-with-icon-wrapper">
+                          <input
+                            type="text"
+                            value={item.productCode}
+                            className="po-add__table-input"
+                            readOnly
+                            onClick={() => openProductModal(item.id)}
+                          />
+                          <button
+                            type="button"
+                            className="po-add__lookup-indicator"
+                            onClick={() => openProductModal(item.id)}
+                          >
+                            <LookupIcon />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="editable-cell">
+                        <div className="po-add-input-with-icon-wrapper">
+                          <input
+                            type="text"
+                            value={item.productName}
+                            className="po-add__table-input"
+                            readOnly
+                            onClick={() => openProductModal(item.id)}
+                          />
+                          <button
+                            type="button"
+                            className="po-add__lookup-indicator"
+                            onClick={() => openProductModal(item.id)}
+                          >
+                            <LookupIcon />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="editable-cell">
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            handleItemChange(e, item.id, "quantity")
+                          }
+                          className="po-add__table-input po-quantity-input"
+                        />
+                      </td>
+                      <td className="editable-cell">
+                        <div className="po-add-input-with-icon-wrapper">
+                          <input
+                            type="text"
+                            value={item.uom}
+                            className="po-add__table-input po-uom-input"
+                            onChange={(e) =>
+                              handleItemChange(e, item.id, "uom")
+                            }
+                          />
+                          <button
+                            type="button"
+                            className="po-add__lookup-indicator"
+                            onClick={() => openUOMModal(item.id)}
+                            title="Lookup UOM"
+                          >
+                            <LookupIcon />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="editable-cell">
+                        <input
+                          type="number"
+                          value={item.price}
+                          onChange={(e) =>
+                            handleItemChange(e, item.id, "price")
+                          }
+                          className="po-add__table-input po-price-input"
+                        />
+                      </td>
+                      <td className="editable-cell">
+                        <div className="po-add-input-with-icon-wrapper">
+                          <input
+                            type="text"
+                            value={item.warehouseLocation}
+                            className="po-add__table-input"
+                            onChange={(e) =>
+                              handleItemChange(e, item.id, "warehouseLocation")
+                            }
+                            onClick={() => openWarehouseModal(item.id)}
+                          />
+                          <button
+                            type="button"
+                            className="po-add__lookup-indicator"
+                            onClick={() => openWarehouseModal(item.id)}
+                            title="Lookup Warehouse"
+                          >
+                            <LookupIcon />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="editable-cell tax-cell">
+                        <div className="po-add-input-with-icon-wrapper">
+                          <input
+                            type="text"
+                            value={item.taxCode}
+                            className="po-add__table-input po-tax-input"
+                            onChange={(e) =>
+                              handleItemChange(e, item.id, "taxCode")
+                            }
+                            onClick={() => openTaxModal(item.id)}
+                          />
+                          <button
+                            type="button"
+                            className="po-add__lookup-indicator"
+                            onClick={() => openTaxModal(item.id)}
+                          >
+                            <LookupIcon />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="editable-cell">
+                        <input
+                          type="number"
+                          value={item.taxPrice}
+                          readOnly
+                          className="po-add__table-input po-tax-input"
+                        />
+                      </td>
+                      <td className="total-cell">{item.total}</td>
+                      <td className="action-cell">
+                        <button
+                          type="button"
+                          className="remove-item-btn"
+                          onClick={() => handleRemoveItem(item.id)}
+                        >
+                          <DeleteIcon />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="tax-summary-container">
+              <div className="summary-item">
+                <label>Product Total without Tax :</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={productTotalSummary}
+                  className="summary-input"
+                />
+              </div>
+              <div className="summary-item">
+                <label>Tax Total :</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={taxTotalSummary}
+                  className="summary-input"
+                />
+              </div>
+              <div className="summary-item">
+                <label>Net Total : </label>
+                <input
+                  type="text"
+                  readOnly
+                  value={grandTotalSummary}
+                  className="summary-input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="detail-page-footer">
+          <div className="footer-actions-main">
             <button
-              type="button"
-              className="add-item-row-btn" // You'll need to style this button
-              onClick={handleAddItemRow}
+              className="footer-btn primary"
+              onClick={handleSave}
+              disabled={isSubmitting}
             >
-              + Add Row
+              {isSubmitting ? "Saving..." : "Add Purchase Order"}
             </button>
           </div>
-          <div className="table-responsive-container">
-            <table className="po-items-table">
-              <thead>
-                <tr>
-                  <th>Product Code</th>
-                  <th>Product Name</th>
-                  <th>Quantity</th>
-                  <th>UOM</th>
-                  <th>Price</th>
-                  <th>Stock Location</th>
-                  <th>Tax Code</th>
-                  <th>Tax Price</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {purchaseItems.map((item) => (
-                  <tr key={item.id}>
-                    <td className="editable-cell product-code-cell">
-                      <input
-                        type="text"
-                        className="po-table-input"
-                        value={item.productCode}
-                        onChange={(e) =>
-                          handleItemChange(e, item.id, "productCode")
-                        }
-                        onFocus={() =>
-                          toggleLookupIndicator(item.id, "ProductCode", true)
-                        }
-                        onBlur={() =>
-                          setTimeout(() => {
-                            if (
-                              !document.activeElement?.classList.contains(
-                                "po-lookup-indicator"
-                              )
-                            ) {
-                              toggleLookupIndicator(
-                                item.id,
-                                "ProductCode",
-                                false
-                              );
-                            }
-                          }, 150)
-                        }
-                      />
-                      {item.showProductCodeLookup && (
-                        <button
-                          type="button"
-                          className="po-lookup-indicator"
-                          onClick={() =>
-                            handleLookupClick(item.id, "ProductCode")
-                          }
-                          title="Lookup Product Code"
-                        >
-                          <LookupIcon />
-                        </button>
-                      )}
-                    </td>
-                    <td className="editable-cell product-name-cell">
-                      <input
-                        type="text"
-                        className="po-table-input"
-                        value={item.productName}
-                        onChange={(e) =>
-                          handleItemChange(e, item.id, "productName")
-                        }
-                        onFocus={() =>
-                          toggleLookupIndicator(item.id, "ProductName", true)
-                        }
-                        onBlur={() =>
-                          setTimeout(() => {
-                            if (
-                              !document.activeElement?.classList.contains(
-                                "po-lookup-indicator"
-                              )
-                            ) {
-                              toggleLookupIndicator(
-                                item.id,
-                                "ProductName",
-                                false
-                              );
-                            }
-                          }, 150)
-                        }
-                      />
-                      {item.showProductNameLookup && (
-                        <button
-                          type="button"
-                          className="po-lookup-indicator"
-                          onClick={() =>
-                            handleLookupClick(item.id, "ProductName")
-                          }
-                          title="Lookup Product Name"
-                        >
-                          <LookupIcon />
-                        </button>
-                      )}
-                    </td>
-                    <td className="editable-cell">
-                      <input
-                        type="number"
-                        className="po-table-input po-quantity-input"
-                        value={item.quantity}
-                        min="0" // Prevent negative quantities
-                        onChange={(e) =>
-                          handleItemChange(e, item.id, "quantity")
-                        }
-                        onBlur={() =>
-                          toggleLookupIndicator(
-                            item.id,
-                            "anyFieldToHideAll",
-                            false
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="editable-cell">
-                      <input
-                        type="text"
-                        className="po-table-input po-uom-input"
-                        value={item.uom}
-                        onChange={(e) => handleItemChange(e, item.id, "uom")}
-                        onBlur={() =>
-                          toggleLookupIndicator(
-                            item.id,
-                            "anyFieldToHideAll",
-                            false
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="editable-cell">
-                      <input
-                        type="number"
-                        className="po-table-input po-price-input"
-                        value={item.price}
-                        step="0.01"
-                        min="0" // Prevent negative prices
-                        onChange={(e) => handleItemChange(e, item.id, "price")}
-                        onBlur={() =>
-                          toggleLookupIndicator(
-                            item.id,
-                            "anyFieldToHideAll",
-                            false
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="editable-cell">
-                      <input
-                        type="text"
-                        className="po-table-input"
-                        value={item.stockLocation}
-                        onChange={(e) =>
-                          handleItemChange(e, item.id, "stockLocation")
-                        }
-                        onBlur={() =>
-                          toggleLookupIndicator(
-                            item.id,
-                            "anyFieldToHideAll",
-                            false
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="editable-cell tax-cell">
-                      <input
-                        type="text" // Changed to text to allow % or fixed value input
-                        className="po-table-input po-tax-input"
-                        value={item.taxCode}
-                        onChange={(e) =>
-                          handleItemChange(e, item.id, "taxCode")
-                        }
-                        onFocus={() =>
-                          toggleLookupIndicator(item.id, "taxCode", true)
-                        }
-                        onBlur={() =>
-                          setTimeout(() => {
-                            if (
-                              !document.activeElement?.classList.contains(
-                                "po-lookup-indicator"
-                              )
-                            ) {
-                              toggleLookupIndicator(item.id, "taxCode", false);
-                            }
-                          }, 150)
-                        }
-                      />
-                      {item.showTaxLookup && ( // Assuming one general tax lookup state
-                        <button
-                          type="button"
-                          className="po-lookup-indicator"
-                          onClick={() => handleLookupClick(item.id, "taxCode")}
-                          title="Lookup Tax"
-                        >
-                          <LookupIcon />
-                        </button>
-                      )}
-                    </td>
-                    <td className="editable-cell">
-                      {" "}
-                      {/* Tax Price - direct amount */}
-                      <input
-                        type="number"
-                        className="po-table-input po-tax-input"
-                        value={item.taxPrice}
-                        step="0.01"
-                        min="0"
-                        onChange={(e) =>
-                          handleItemChange(e, item.id, "taxPrice")
-                        }
-                        onBlur={() =>
-                          toggleLookupIndicator(
-                            item.id,
-                            "anyFieldToHideAll",
-                            false
-                          )
-                        }
-                      />
-                    </td>
-
-                    <td className="total-cell">{item.total || "0.00"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="tax-summary-container">
-            <div className="summary-item">
-              <label htmlFor="quantityTotalSummary" className="summary-label">
-                Product Total :
-              </label>
-              <input
-                type="text"
-                id="quantityTotalSummary"
-                className="summary-input"
-                readOnly
-                value={productTotalSummary}
-              />
-            </div>
-            <div className="summary-item">
-              <label htmlFor="taxTotalSummary" className="summary-label">
-                Tax Total :
-              </label>
-              <input
-                type="text"
-                id="taxTotalSummary"
-                className="summary-input"
-                readOnly
-                value={taxTotalSummary}
-              />
-            </div>
-            <div className="summary-item">
-              <label htmlFor="grandTotalSummary" className="summary-label">
-                Net Total :
-              </label>
-              <input
-                type="text"
-                id="grandTotalSummary"
-                className="summary-input"
-                readOnly
-                value={grandTotalSummary}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Page Footer Actions (Sticky) */}
-      <div className="detail-page-footer">
-        <div className="footer-actions-main">
-          <button className="footer-btn primary" onClick={handleSave}>
-            Add
+          <button
+            className="footer-btn secondary"
+            onClick={() => navigate("/purchaseorder")}
+            disabled={isSubmitting}
+          >
+            Cancel
           </button>
-          <button className="footer-btn secondary">Remove</button>{" "}
-          {/* This button's functionality isn't implemented */}
         </div>
-        <button className="footer-btn secondary" onClick={handleCancel}>
-          {" "}
-          {/* Changed to secondary for typical cancel styling */}
-          Cancel
-        </button>
       </div>
-    </div>
+    </>
   );
 }
-
 export default PurchaseAdd;

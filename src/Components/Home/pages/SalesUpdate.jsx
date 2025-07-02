@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./SalesUpdate.css"; // CRITICAL: Ensure SalesUpdate.css has ALL necessary styles
-import { API_PRODUCTS_ENDPOINT, API_BASE_URL } from "../../../config";
+import {
+  API_PRODUCTS_ENDPOINT,
+  API_BASE_URL,
+  API_UOM_ENDPOINT,
+  API_WAREHOUSE_ENDPOINT,
+} from "../../../config";
 
 // --- Reusable Message Modal Component (prefixed for this page) ---
 const MessageModal = ({ message, onClose, type = "info" }) => {
@@ -74,7 +79,7 @@ function SalesUpdate() {
     taxCode: "",
     taxPrice: "0.00",
     total: "0.00",
-    showTaxLookup: false,
+    //showTaxLookup: false,
     isNew: true, // Flag to identify items added in the UI during this session
   });
   const [salesItems, setSalesItems] = useState([]); // Will be populated
@@ -120,6 +125,24 @@ function SalesUpdate() {
   const [isTaxLookupModalOpen, setIsTaxLookupModalOpen] = useState(false);
   const [taxLookupTargetItemId, setTaxLookupTargetItemId] = useState(null); // client-side ID
   const [searchTermTaxLookupModal, setSearchTermTaxLookupModal] = useState("");
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [searchTermCustomerModal, setSearchTermCustomerModal] = useState("");
+  const [allUOMs, setAllUOMs] = useState([]);
+  const [isLoadingUOMs, setIsLoadingUOMs] = useState(true); // Start true, fetch with other lookups
+  const [uomsError, setUOMsError] = useState(null);
+  const [isUOMLookupModalOpen, setIsUOMLookupModalOpen] = useState(false);
+  const [uomLookupTargetItemId, setUOMLookupTargetItemId] = useState(null); // client-side ID of the item row
+  const [searchTermUOMLookupModal, setSearchTermUOMLookupModal] = useState("");
+
+  const [allWarehouses, setAllWarehouses] = useState([]);
+  const [isLoadingWarehouses, setIsLoadingWarehouses] = useState(true); // Start true
+  const [warehousesError, setWarehousesError] = useState(null);
+  const [isWarehouseLookupModalOpen, setIsWarehouseLookupModalOpen] =
+    useState(false);
+  const [warehouseLookupTargetItemId, setWarehouseLookupTargetItemId] =
+    useState(null); // client-side ID
+  const [searchTermWarehouseLookupModal, setSearchTermWarehouseLookupModal] =
+    useState("");
 
   const showAppModal = (message, type = "info") =>
     setModalState({ message, type, isActive: true });
@@ -204,6 +227,55 @@ function SalesUpdate() {
     }
   }, []); // Removed showAppModal from deps
 
+  const fetchAllUOMs = useCallback(async () => {
+    setIsLoadingUOMs(true);
+    setUOMsError(null);
+    try {
+      const response = await fetch(API_UOM_ENDPOINT);
+      if (!response.ok) {
+        throw new Error(
+          `UOMs API Error: ${response.statusText} (${response.status})`
+        );
+      }
+      const data = await response.json();
+      setAllUOMs(data.map((uom) => ({ id: uom.id, name: uom.name }))); // Adjust if your DTO differs
+    } catch (error) {
+      console.error("Error fetching UOMs for update page:", error);
+      setUOMsError(error.message);
+      // Optionally show an app modal for this error if critical for page function
+      // showAppModal(`Error loading UOMs: ${error.message}`, "error");
+    } finally {
+      setIsLoadingUOMs(false);
+    }
+  }, []); // API_UOM_ENDPOINT is constant
+
+  const fetchAllWarehouses = useCallback(async () => {
+    setIsLoadingWarehouses(true);
+    setWarehousesError(null);
+    try {
+      const response = await fetch(API_WAREHOUSE_ENDPOINT);
+      if (!response.ok) {
+        throw new Error(
+          `Warehouses API Error: ${response.statusText} (${response.status})`
+        );
+      }
+      const data = await response.json();
+      setAllWarehouses(
+        data.map((wh) => ({
+          id: wh.id,
+          code: wh.code,
+          name: wh.name,
+          address: wh.address,
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching warehouses for update page:", error);
+      setWarehousesError(error.message);
+      // showAppModal(`Error loading warehouses: ${error.message}`, "error"); // Optional
+    } finally {
+      setIsLoadingWarehouses(false);
+    }
+  }, []);
   // --- useEffect to Fetch Sales Order Data for Update AND dependent lookups ---
   useEffect(() => {
     if (!soId) {
@@ -221,6 +293,8 @@ function SalesUpdate() {
           fetchAllProductsForModal(),
           fetchAllCustomers(),
           fetchActiveTaxCodes(),
+          fetchAllUOMs(), // Fetch UOMs for the update page
+          fetchAllWarehouses(),
         ]);
         // Then fetch the main sales order data
         const response = await fetch(`${API_BASE_URL}/SalesOrders/${soId}`);
@@ -295,7 +369,14 @@ function SalesUpdate() {
     };
 
     fetchOrderAndDependencies();
-  }, [soId, fetchAllProductsForModal, fetchAllCustomers, fetchActiveTaxCodes]); // Add fetch callbacks to dependency array
+  }, [
+    soId,
+    fetchAllProductsForModal,
+    fetchAllCustomers,
+    fetchActiveTaxCodes,
+    fetchAllUOMs,
+    fetchAllWarehouses,
+  ]); // Add fetch callbacks to dependency array
 
   // --- Input Handlers (Header, Items, Files) ---
   const handleInputChange = (e) => {
@@ -596,77 +677,227 @@ function SalesUpdate() {
     setTaxLookupTargetItemId(null);
   };
 
+  const openCustomerLookupModal = () => {
+    setSearchTermCustomerModal(""); // Clear previous search
+    setIsCustomerModalOpen(true);
+    // Optionally close existing text-based suggestions if they are open
+    setShowCustomerSuggestionsForCode(false);
+    setShowCustomerSuggestionsForName(false);
+  };
+
+  const handleSelectCustomerFromModal = (customer) => {
+    const addressParts = [
+      customer.address1,
+      customer.address2,
+      customer.street,
+      customer.city,
+      customer.state,
+      customer.postBox,
+      customer.country,
+    ];
+    const displayAddress = addressParts.filter(Boolean).join(", ");
+
+    setFormData((prev) => ({
+      ...prev,
+      customerCode: customer.code || "",
+      customerName: customer.name || "",
+      shipToAddress: displayAddress,
+      salesEmployee: customer.employee || "",
+    }));
+    setFormErrors((prev) => ({
+      // Clear potential errors after selection
+      ...prev,
+      customerCode: null,
+      customerName: null,
+    }));
+    setIsCustomerModalOpen(false);
+  };
+
+  const openUOMLookupModal = (itemId) => {
+    // itemId is client-side ID
+    setUOMLookupTargetItemId(itemId);
+    setSearchTermUOMLookupModal("");
+    setIsUOMLookupModalOpen(true);
+  };
+
+  const handleSelectUOMFromModal = (selectedUOM) => {
+    // selectedUOM is an object like { id: ..., name: ... }
+    if (uomLookupTargetItemId === null) return;
+
+    setSalesItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === uomLookupTargetItemId
+          ? { ...item, uom: selectedUOM.name } // Update UOM field
+          : item
+      )
+    );
+
+    setIsUOMLookupModalOpen(false);
+    setUOMLookupTargetItemId(null);
+  };
+
+  const openWarehouseLookupModal = (itemId) => {
+    // itemId is client-side ID
+    setWarehouseLookupTargetItemId(itemId);
+    setSearchTermWarehouseLookupModal("");
+    setIsWarehouseLookupModalOpen(true);
+  };
+
+  const handleSelectWarehouseFromModal = (selectedWarehouse) => {
+    if (warehouseLookupTargetItemId === null) return;
+
+    setSalesItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === warehouseLookupTargetItemId
+          ? { ...item, warehouseLocation: selectedWarehouse.code } // Populate with warehouse code
+          : item
+      )
+    );
+    setIsWarehouseLookupModalOpen(false);
+    setWarehouseLookupTargetItemId(null);
+  };
+
   // --- Validation ---
+  // PLACEMENT: In SalesUpdate.jsx, replace the entire validateForm function with this one.
+
   const validateForm = () => {
+    // A fresh errors object for this validation run.
     const errors = {};
-    const modalErrors = [];
-    let isValid = true;
+
+    // --- Validate header fields ---
     if (!formData.customerCode.trim()) {
       errors.customerCode = "Customer Code is required.";
-      modalErrors.push("Customer Code is required.");
-      isValid = false;
     }
     if (!formData.customerName.trim()) {
       errors.customerName = "Customer Name is required.";
-      modalErrors.push("Customer Name is required.");
-      isValid = false;
     }
     if (!formData.soDate) {
       errors.soDate = "S.O Date is required.";
-      modalErrors.push("Sales Order Date is required.");
-      isValid = false;
+    }
+    // This field was missing from your provided validation, adding it back
+    // to ensure consistency with your request.
+    if (!formData.deliveryDate) {
+      errors.deliveryDate = "Delivery Date is required.";
+    } else if (isNaN(new Date(formData.deliveryDate).getTime())) {
+      errors.deliveryDate = "Invalid Delivery Date format.";
+    } else if (
+      formData.soDate &&
+      new Date(formData.deliveryDate) < new Date(formData.soDate)
+    ) {
+      // This block only runs if both dates are valid and delivery date is before S.O. date
+      errors.deliveryDate = "Delivery Date cannot be before the S.O. Date.";
     }
 
+    // --- Validate sales items ---
     if (salesItems.length === 0) {
-      errors.salesItemsGeneral = "At least one item must be added.";
-      modalErrors.push("At least one item must be added.");
-      isValid = false;
+      errors.salesItemsGeneral =
+        "At least one item must be added to the sales order.";
     } else {
       salesItems.forEach((item) => {
-        // item.id here is client-side ID
-        let itemErrorPrefix = `item_${item.id}`;
+        // For each item, check all its fields for errors.
         if (!item.productCode.trim() && !item.productName.trim()) {
-          errors[`${itemErrorPrefix}_product`] =
-            "Product Code or Name required.";
-          modalErrors.push("Product Code or Name is required.");
-          isValid = false;
+          errors[`item_${item.id}_product`] = "Product is required.";
         }
-        const quantity = parseFloat(item.quantity);
-        if (isNaN(quantity) || quantity <= 0) {
-          errors[`${itemErrorPrefix}_quantity`] = "Qty > 0 required.";
-          modalErrors.push("Quantity must be greater than 0.");
-          isValid = false;
+        if (
+          isNaN(parseFloat(item.quantity)) ||
+          parseFloat(item.quantity) <= 0
+        ) {
+          errors[`item_${item.id}_quantity`] =
+            "Quantity must be a positive number.";
         }
-        const price = parseFloat(item.price);
-        if (isNaN(price) || price < 0) {
-          errors[`${itemErrorPrefix}_price`] = "Valid price required.";
-          modalErrors.push("Price is required.");
-          isValid = false;
+        if (isNaN(parseFloat(item.price)) || parseFloat(item.price) < 0) {
+          errors[`item_${item.id}_price`] = "Price must be a valid number.";
         }
-
+        if (!item.uom.trim()) {
+          errors[`item_${item.id}_uom`] = "UOM is required.";
+        }
         if (!item.warehouseLocation.trim()) {
-          errors[`${itemErrorPrefix}_warehouseLocation`] =
+          errors[`item_${item.id}_warehouseLocation`] =
             "Warehouse is required.";
-          modalErrors.push("Warehouse is required.");
-          isValid = false;
         }
       });
     }
+
+    // Update the state to show red borders on the UI in the next render.
     setFormErrors(errors);
 
-    if (!isValid) {
-      showAppModal(modalErrors.join("\n"), "error"); // 🟩 Show error modal
-    }
-
-    return isValid;
+    // Return the fresh, up-to-date errors object for immediate use.
+    return errors;
   };
 
   // 📍 Starts around line ~690
   const handleSave = async () => {
-    if (!validateForm()) {
-      showAppModal("Please correct the errors in the form.", "error");
-      console.log("Validation failed, returning from handleSave"); // DEBUG
-      return;
+    const validationErrors = validateForm();
+
+    // 2. Check if the returned object has any properties (keys).
+    //    If it does, it means there are errors.
+    if (Object.keys(validationErrors).length > 0) {
+      const errorMessagesList = [];
+
+      // --- Build the modal message using the LOCAL `validationErrors` object ---
+      // This is the key change: we are not using the (stale) `formErrors` state here.
+
+      if (validationErrors.customerCode) {
+        errorMessagesList.push(
+          `- Customer Code: ${validationErrors.customerCode}`
+        );
+      }
+      if (validationErrors.customerName) {
+        errorMessagesList.push(
+          `- Customer Name: ${validationErrors.customerName}`
+        );
+      }
+      if (validationErrors.soDate) {
+        errorMessagesList.push(`- S.O Date: ${validationErrors.soDate}`);
+      }
+      if (validationErrors.deliveryDate) {
+        errorMessagesList.push(
+          `- Delivery Date: ${validationErrors.deliveryDate}`
+        );
+      }
+      if (validationErrors.salesItemsGeneral) {
+        errorMessagesList.push(
+          `- Items: ${validationErrors.salesItemsGeneral}`
+        );
+      }
+
+      // Loop through items to add their specific errors
+      salesItems.forEach((item, index) => {
+        const itemPrefix = `- Item #${index + 1}`;
+        if (validationErrors[`item_${item.id}_product`]) {
+          errorMessagesList.push(
+            `${itemPrefix}: ${validationErrors[`item_${item.id}_product`]}`
+          );
+        }
+        if (validationErrors[`item_${item.id}_quantity`]) {
+          errorMessagesList.push(
+            `${itemPrefix}: ${validationErrors[`item_${item.id}_quantity`]}`
+          );
+        }
+        if (validationErrors[`item_${item.id}_price`]) {
+          errorMessagesList.push(
+            `${itemPrefix}: ${validationErrors[`item_${item.id}_price`]}`
+          );
+        }
+        if (validationErrors[`item_${item.id}_uom`]) {
+          errorMessagesList.push(
+            `${itemPrefix}: ${validationErrors[`item_${item.id}_uom`]}`
+          );
+        }
+        if (validationErrors[`item_${item.id}_warehouseLocation`]) {
+          errorMessagesList.push(
+            `${itemPrefix}: ${
+              validationErrors[`item_${item.id}_warehouseLocation`]
+            }`
+          );
+        }
+      });
+
+      const modalErrorMessage =
+        "Please correct the following errors:\n" + errorMessagesList.join("\n");
+      showAppModal(modalErrorMessage, "error");
+
+      return; // Stop the function from proceeding to the save logic
     }
 
     setIsSubmitting(true);
@@ -732,78 +963,27 @@ function SalesUpdate() {
 
       if (!response.ok) {
         let errorMsg = `Error: ${response.status} ${response.statusText}`;
-        let errorDataFromBackend = null;
-        const contentType = response.headers.get("content-type");
-
-        if (contentType && contentType.includes("application/json")) {
-          try {
-            errorDataFromBackend = await response.json();
-            console.error(
-              "Backend Update Error (JSON received):",
-              errorDataFromBackend
-            );
-            errorMsg =
-              errorDataFromBackend.message ||
-              errorDataFromBackend.title ||
-              JSON.stringify(
-                errorDataFromBackend.errors || errorDataFromBackend
-              ) ||
-              errorMsg;
-          } catch (jsonError) {
-            console.error(
-              "Failed to parse backend error response as JSON:",
-              jsonError
-            );
-          }
-        } else {
-          try {
-            const textError = await response.text();
-            console.error("Backend Update Error (Text received):", textError);
-            if (textError.trim()) errorMsg = textError.trim();
-          } catch (textErrorError) {
-            console.error(
-              "Failed to parse backend error response as text:",
-              textErrorError
-            );
-          }
-        }
-
-        const errorToThrow = new Error(errorMsg);
-        errorToThrow.status = response.status;
-        errorToThrow.data = errorDataFromBackend;
-        throw errorToThrow;
-      }
-
-      // ✅ Success Handling
-      const text = await response.text();
-      let responseData = null;
-      if (text && text.trim()) {
         try {
-          responseData = JSON.parse(text);
-          console.log(
-            "[SalesUpdate] Update successful. Response data:",
-            responseData
-          );
-
-          // ✅ Update rowVersionBase64 if available
-
-          showAppModal(
-            responseData.message ||
-              `Sales Order ${formData.salesOrderNo} updated successfully!`,
-            "success"
-          );
-        } catch {
-          showAppModal(
-            `Sales Order ${formData.salesOrderNo} updated successfully!`,
-            "success"
-          );
+          const errorData = await response.json();
+          console.error("Backend Update Error:", errorData);
+          if (errorData.errors) {
+            const messages = Object.values(errorData.errors).flat();
+            errorMsg = "Server validation failed:\n- " + messages.join("\n- ");
+          } else {
+            errorMsg =
+              errorData.message || errorData.title || JSON.stringify(errorData);
+          }
+        } catch (e) {
+          // Can't parse JSON, use text response
+          errorMsg = await response.text();
         }
-      } else {
-        showAppModal(
-          `Sales Order ${formData.salesOrderNo} updated successfully!`,
-          "success"
-        );
+        throw new Error(errorMsg);
       }
+
+      showAppModal(
+        `Sales Order ${formData.salesOrderNo} updated successfully!`,
+        "success"
+      );
     } catch (error) {
       console.error("Failed to update sales order (outer catch):", error);
       if (error.status === 409) {
@@ -899,49 +1079,60 @@ function SalesUpdate() {
               ref={customerCodeInputRef}
             >
               <label htmlFor="customerCode">Customer Code :</label>
-              <input
-                type="text"
-                id="customerCode"
-                name="customerCode"
-                className={`so-update__form-input-styled ${
-                  formErrors.customerCode ? "so-update__input-error" : ""
-                }`}
-                value={formData.customerCode}
-                onChange={handleInputChange}
-                onKeyDown={handleCustomerKeyDown}
-                onFocus={() => {
-                  if (formData.customerCode.trim() && allCustomers.length) {
-                    const f = allCustomers.filter((c) =>
-                      c.code
-                        ?.toLowerCase()
-                        .includes(formData.customerCode.trim().toLowerCase())
-                    );
-                    setCustomerSuggestions(f);
-                    setShowCustomerSuggestionsForCode(f.length > 0);
-                    setShowCustomerSuggestionsForName(false);
-                  }
-                }}
-                autoComplete="off"
-              />
-              {showCustomerSuggestionsForCode &&
-                customerSuggestions.length > 0 && (
-                  <ul className="so-update__customer-suggestions-list so-update__customer-suggestions-list-code">
-                    {customerSuggestions.map((c, i) => (
-                      <li
-                        key={c.id || c.code}
-                        className={
-                          i === activeSuggestionIndex
-                            ? "so-update__active-suggestion"
-                            : ""
-                        }
-                        onClick={() => handleCustomerSuggestionClick(c)}
-                        onMouseEnter={() => setActiveSuggestionIndex(i)}
-                      >
-                        {c.code} - {c.name}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <div className="so-update__input-icon-wrapper">
+                <input
+                  type="text"
+                  id="customerCode"
+                  name="customerCode"
+                  className={`so-update__form-input-styled ${
+                    formErrors.customerCode ? "so-update__input-error" : ""
+                  }`}
+                  value={formData.customerCode}
+                  onChange={handleInputChange}
+                  onKeyDown={handleCustomerKeyDown}
+                  onFocus={() => {
+                    if (formData.customerCode.trim() && allCustomers.length) {
+                      const f = allCustomers.filter((c) =>
+                        c.code
+                          ?.toLowerCase()
+                          .includes(formData.customerCode.trim().toLowerCase())
+                      );
+                      setCustomerSuggestions(f);
+                      setShowCustomerSuggestionsForCode(f.length > 0);
+                      setShowCustomerSuggestionsForName(false);
+                    }
+                  }}
+                  autoComplete="off"
+                  readOnly
+                />
+                {/* <button
+                  type="button"
+                  className="so-update__header-lookup-indicator so-update__internal" // Added classes
+                  onClick={openCustomerLookupModal}
+                  title="Lookup Customer"
+                >
+                  <LookupIcon />
+                </button> */}
+                {showCustomerSuggestionsForCode &&
+                  customerSuggestions.length > 0 && (
+                    <ul className="so-update__customer-suggestions-list so-update__customer-suggestions-list-code">
+                      {customerSuggestions.map((c, i) => (
+                        <li
+                          key={c.id || c.code}
+                          className={
+                            i === activeSuggestionIndex
+                              ? "so-update__active-suggestion"
+                              : ""
+                          }
+                          onClick={() => handleCustomerSuggestionClick(c)}
+                          onMouseEnter={() => setActiveSuggestionIndex(i)}
+                        >
+                          {c.code} - {c.name}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+              </div>
             </div>
             {formErrors.customerCode && (
               <span className="so-update__field-error so-update__field-error-shift">
@@ -955,49 +1146,60 @@ function SalesUpdate() {
               ref={customerNameInputRef}
             >
               <label htmlFor="customerName">Customer Name :</label>
-              <input
-                type="text"
-                id="customerName"
-                name="customerName"
-                className={`so-update__form-input-styled ${
-                  formErrors.customerName ? "so-update__input-error" : ""
-                }`}
-                value={formData.customerName}
-                onChange={handleInputChange}
-                onKeyDown={handleCustomerKeyDown}
-                onFocus={() => {
-                  if (formData.customerName.trim() && allCustomers.length) {
-                    const f = allCustomers.filter((c) =>
-                      c.name
-                        ?.toLowerCase()
-                        .includes(formData.customerName.trim().toLowerCase())
-                    );
-                    setCustomerSuggestions(f);
-                    setShowCustomerSuggestionsForName(f.length > 0);
-                    setShowCustomerSuggestionsForCode(false);
-                  }
-                }}
-                autoComplete="off"
-              />
-              {showCustomerSuggestionsForName &&
-                customerSuggestions.length > 0 && (
-                  <ul className="so-update__customer-suggestions-list so-update__customer-suggestions-list-name">
-                    {customerSuggestions.map((c, i) => (
-                      <li
-                        key={c.id || c.name}
-                        className={
-                          i === activeSuggestionIndex
-                            ? "so-update__active-suggestion"
-                            : ""
-                        }
-                        onClick={() => handleCustomerSuggestionClick(c)}
-                        onMouseEnter={() => setActiveSuggestionIndex(i)}
-                      >
-                        {c.name} ({c.code})
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <div className="so-update__input-icon-wrapper">
+                <input
+                  type="text"
+                  id="customerName"
+                  name="customerName"
+                  className={`so-update__form-input-styled  ${
+                    formErrors.customerName ? "so-update__input-error" : ""
+                  }`}
+                  value={formData.customerName}
+                  onChange={handleInputChange}
+                  onKeyDown={handleCustomerKeyDown}
+                  onFocus={() => {
+                    if (formData.customerName.trim() && allCustomers.length) {
+                      const f = allCustomers.filter((c) =>
+                        c.name
+                          ?.toLowerCase()
+                          .includes(formData.customerName.trim().toLowerCase())
+                      );
+                      setCustomerSuggestions(f);
+                      setShowCustomerSuggestionsForName(f.length > 0);
+                      setShowCustomerSuggestionsForCode(false);
+                    }
+                  }}
+                  autoComplete="off"
+                  readOnly
+                />
+                {/* <button
+                  type="button"
+                  className="so-update__header-lookup-indicator so-update__internal" // Added classes
+                  onClick={openCustomerLookupModal}
+                  title="Lookup Customer"
+                >
+                  <LookupIcon />
+                </button> */}
+                {showCustomerSuggestionsForName &&
+                  customerSuggestions.length > 0 && (
+                    <ul className="so-update__customer-suggestions-list so-update__customer-suggestions-list-name">
+                      {customerSuggestions.map((c, i) => (
+                        <li
+                          key={c.id || c.name}
+                          className={
+                            i === activeSuggestionIndex
+                              ? "so-update__active-suggestion"
+                              : ""
+                          }
+                          onClick={() => handleCustomerSuggestionClick(c)}
+                          onMouseEnter={() => setActiveSuggestionIndex(i)}
+                        >
+                          {c.name} ({c.code})
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+              </div>
             </div>
             {formErrors.customerName && (
               <span className="so-update__field-error so-update__field-error-shift">
@@ -1074,7 +1276,7 @@ function SalesUpdate() {
               </span>
             )}
             <div className="so-update__entry-header-field">
-              <label htmlFor="deliveryDate">Due Date :</label>
+              <label htmlFor="deliveryDate">Delivery Date :</label>
               <input
                 type="date"
                 id="deliveryDate"
@@ -1234,6 +1436,7 @@ function SalesUpdate() {
                             onChange={(e) =>
                               handleItemChange(e, item.id, "productCode")
                             }
+                            onFocus={() => openProductLookupModal(item.id)}
                           />
                           <button
                             type="button"
@@ -1261,6 +1464,7 @@ function SalesUpdate() {
                             onChange={(e) =>
                               handleItemChange(e, item.id, "productName")
                             }
+                            onFocus={() => openProductLookupModal(item.id)}
                           />
                           <button
                             type="button"
@@ -1299,7 +1503,16 @@ function SalesUpdate() {
                             onChange={(e) =>
                               handleItemChange(e, item.id, "uom")
                             }
+                            onFocus={() => openUOMLookupModal(item.id)}
                           />
+                          {/* <button
+                            type="button"
+                            className="so-update__lookup-indicator" // Use the general table lookup icon class
+                            onClick={() => openUOMLookupModal(item.id)}
+                            title="Lookup UOM"
+                          >
+                            <LookupIcon />
+                          </button> */}
                         </td>
                         <td className="so-update__editable-cell">
                           <input
@@ -1330,7 +1543,16 @@ function SalesUpdate() {
                             onChange={(e) =>
                               handleItemChange(e, item.id, "warehouseLocation")
                             }
+                            onFocus={() => openWarehouseLookupModal(item.id)}
                           />
+                          <button
+                            type="button"
+                            className="so-update__lookup-indicator" // Use the general table lookup icon class
+                            onClick={() => openWarehouseLookupModal(item.id)}
+                            title="Lookup Warehouse"
+                          >
+                            <LookupIcon />
+                          </button>
                           {formErrors[`item_${item.id}_warehouseLocation`] && (
                             <div className="so-update__item-field-error">
                               {formErrors[`item_${item.id}_warehouseLocation`]}
@@ -1348,14 +1570,14 @@ function SalesUpdate() {
                             onFocus={() => openTaxLookupModal(item.id)}
                           />
                           {/* No need for item.showTaxLookup if onFocus opens modal */}
-                          <button
+                          {/* <button
                             type="button"
                             className="so-update__lookup-indicator"
                             onClick={() => openTaxLookupModal(item.id)}
                             title="Lookup Tax"
                           >
                             <LookupIcon />
-                          </button>
+                          </button> */}
                         </td>
                         <td className="so-update__editable-cell">
                           <input
@@ -1464,7 +1686,7 @@ function SalesUpdate() {
 
       {/* Product Lookup Modal */}
       {isProductModalOpen && (
-        <div className="so-update__modal-overlay so-update__product-lookup-modal-overlay">
+        <div className="so-update__modal-overlay so-update__modal-overlay">
           <div className="so-update__modal-content so-update__product-lookup-modal">
             <div className="so-update__modal-header">
               <h2>Select Product</h2>
@@ -1610,6 +1832,295 @@ function SalesUpdate() {
                         <tr>
                           <td colSpan="3" className="so-update__modal-no-data">
                             No active tax codes found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* --- NEW: Customer Lookup Modal for SalesUpdate --- */}
+      {isCustomerModalOpen && (
+        <div className="so-update__modal-overlay so-update__customer-lookup-modal-overlay">
+          {" "}
+          {/* Optional: specific class */}
+          <div className="so-update__modal-content so-update__customer-lookup-modal">
+            {" "}
+            {/* Optional: specific class */}
+            <div className="so-update__modal-header">
+              <h2>Select Customer</h2>
+              <button
+                className="so-update__modal-close-btn"
+                onClick={() => setIsCustomerModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="so-update__modal-body">
+              <input
+                type="text"
+                placeholder="Search by Code, Name..."
+                className="so-update__modal-search-input" // Reuse existing style
+                value={searchTermCustomerModal}
+                onChange={(e) => setSearchTermCustomerModal(e.target.value)}
+                autoFocus
+              />
+              {isLoadingCustomers && <p>Loading customers...</p>}
+              {!isLoadingCustomers && (
+                <div className="so-update__product-lookup-table-container">
+                  {" "}
+                  {/* Reuse existing style */}
+                  <table className="so-update__product-lookup-table">
+                    {" "}
+                    {/* Reuse existing style */}
+                    <thead>
+                      <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Bill to Address</th>
+                        <th>Sales Employee</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allCustomers.filter((customer) => {
+                        const term = searchTermCustomerModal.toLowerCase();
+                        if (!term) return true;
+                        return (
+                          (customer.code &&
+                            customer.code.toLowerCase().includes(term)) ||
+                          (customer.name &&
+                            customer.name.toLowerCase().includes(term))
+                        );
+                      }).length > 0 ? (
+                        allCustomers
+                          .filter((customer) => {
+                            const term = searchTermCustomerModal.toLowerCase();
+                            if (!term) return true;
+                            return (
+                              (customer.code &&
+                                customer.code.toLowerCase().includes(term)) ||
+                              (customer.name &&
+                                customer.name.toLowerCase().includes(term))
+                            );
+                          })
+                          .map((customer) => {
+                            const addressParts = [
+                              customer.address1,
+                              customer.address2,
+                              customer.street,
+                              customer.city,
+                              customer.state,
+                              customer.postBox,
+                              customer.country,
+                            ];
+                            const displayAddressInModal = addressParts
+                              .filter(Boolean)
+                              .join(", ");
+                            return (
+                              <tr
+                                key={customer.id || customer.code}
+                                onClick={() =>
+                                  handleSelectCustomerFromModal(customer)
+                                }
+                                style={{ cursor: "pointer" }}
+                              >
+                                <td>{customer.code}</td>
+                                <td>{customer.name}</td>
+                                <td>{displayAddressInModal || "N/A"}</td>
+                                <td>{customer.employee || "N/A"}</td>
+                              </tr>
+                            );
+                          })
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="so-update__modal-no-data">
+                            No customers found matching your search.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {isUOMLookupModalOpen && (
+        <div className="so-update__modal-overlay so-update__uom-lookup-modal-overlay">
+          {/* Optional: specific class */}
+          <div className="so-update__modal-content so-update__uom-lookup-modal">
+            {" "}
+            {/* Optional: specific class */}
+            <div className="so-update__modal-header">
+              <h2>Select Unit of Measure (UOM)</h2>
+              <button
+                className="so-update__modal-close-btn"
+                onClick={() => setIsUOMLookupModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="so-update__modal-body">
+              <input
+                type="text"
+                placeholder="Search UOM..."
+                className="so-update__modal-search-input" // Reuse existing style
+                value={searchTermUOMLookupModal}
+                onChange={(e) => setSearchTermUOMLookupModal(e.target.value)}
+                autoFocus
+              />
+              {isLoadingUOMs && <p>Loading UOMs...</p>}
+              {uomsError && (
+                <p className="so-update__modal-error-text">
+                  Error loading UOMs: {uomsError}
+                </p>
+              )}
+              {!isLoadingUOMs && !uomsError && (
+                <div className="so-update__product-lookup-table-container">
+                  {" "}
+                  {/* Reuse existing style */}
+                  <table className="so-update__product-lookup-table">
+                    {" "}
+                    {/* Reuse existing style */}
+                    <thead>
+                      <tr>
+                        <th>UOM Name</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allUOMs.filter((uom) => {
+                        const term = searchTermUOMLookupModal.toLowerCase();
+                        if (!term) return true;
+                        return (
+                          uom.name && uom.name.toLowerCase().includes(term)
+                        );
+                      }).length > 0 ? (
+                        allUOMs
+                          .filter((uom) => {
+                            const term = searchTermUOMLookupModal.toLowerCase();
+                            if (!term) return true;
+                            return (
+                              uom.name && uom.name.toLowerCase().includes(term)
+                            );
+                          })
+                          .map((uom) => (
+                            <tr
+                              key={uom.id}
+                              onClick={() => handleSelectUOMFromModal(uom)}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <td>{uom.name}</td>
+                            </tr>
+                          ))
+                      ) : (
+                        <tr>
+                          <td colSpan="1" className="so-update__modal-no-data">
+                            No UOMs found matching your search.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isWarehouseLookupModalOpen && (
+        <div className="so-update__modal-overlay so-update__warehouse-lookup-modal-overlay">
+          {" "}
+          {/* Optional: specific class */}
+          <div className="so-update__modal-content so-update__warehouse-lookup-modal">
+            {" "}
+            {/* Optional: specific class */}
+            <div className="so-update__modal-header">
+              <h2>Select Warehouse</h2>
+              <button
+                className="so-update__modal-close-btn"
+                onClick={() => setIsWarehouseLookupModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="so-update__modal-body">
+              <input
+                type="text"
+                placeholder="Search by Warehouse Code or Name..."
+                className="so-update__modal-search-input" // Reuse existing style
+                value={searchTermWarehouseLookupModal}
+                onChange={(e) =>
+                  setSearchTermWarehouseLookupModal(e.target.value)
+                }
+                autoFocus
+              />
+              {isLoadingWarehouses && <p>Loading warehouses...</p>}
+              {warehousesError && (
+                <p className="so-update__modal-error-text">
+                  Error loading warehouses: {warehousesError}
+                </p>
+              )}
+              {!isLoadingWarehouses && !warehousesError && (
+                <div className="so-update__product-lookup-table-container">
+                  {" "}
+                  {/* Reuse existing style */}
+                  <table className="so-update__product-lookup-table">
+                    {" "}
+                    {/* Reuse existing style */}
+                    <thead>
+                      <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Address</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allWarehouses.filter((wh) => {
+                        const term =
+                          searchTermWarehouseLookupModal.toLowerCase();
+                        if (!term) return true;
+                        return (
+                          (wh.code && wh.code.toLowerCase().includes(term)) ||
+                          (wh.name && wh.name.toLowerCase().includes(term)) ||
+                          (wh.address &&
+                            wh.address.toLowerCase().includes(term))
+                        );
+                      }).length > 0 ? (
+                        allWarehouses
+                          .filter((wh) => {
+                            const term =
+                              searchTermWarehouseLookupModal.toLowerCase();
+                            if (!term) return true;
+                            return (
+                              (wh.code &&
+                                wh.code.toLowerCase().includes(term)) ||
+                              (wh.name &&
+                                wh.name.toLowerCase().includes(term)) ||
+                              (wh.address &&
+                                wh.address.toLowerCase().includes(term))
+                            );
+                          })
+                          .map((wh) => (
+                            <tr
+                              key={wh.id}
+                              onClick={() => handleSelectWarehouseFromModal(wh)}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <td>{wh.code}</td>
+                              <td>{wh.name}</td>
+                              <td>{wh.address}</td>
+                            </tr>
+                          ))
+                      ) : (
+                        <tr>
+                          <td colSpan="3" className="so-update__modal-no-data">
+                            No warehouses found matching your search.
                           </td>
                         </tr>
                       )}

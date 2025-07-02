@@ -439,3 +439,19 @@
   flex-grow: 1;
   /* ... rest of your styles ... */
 }
+
+/* --- ADD THIS TO YOUR ProductsAdd.css FILE --- */
+
+/* Styles for the new image preview element */
+.pa-current-image-preview {
+  width: 120px; /* Give it a fixed width */
+  height: 120px; /* Give it a fixed height */
+  object-fit: cover; /* Prevents image from stretching */
+  background-color: #f0f2f5; /* A light background for the empty space */
+
+  /* Your existing styles are good too */
+  border: 1px solid #ddd;
+  border-radius: 4px;
+
+  transition: opacity 0.4s ease-in-out;
+}

@@ -30,7 +30,7 @@ import CustomerGroup from "./CustomerGroup";
 import ProductsGroup from "./pages/ProductsGroup";
 
 // Sales & Purchase submenu page components
-import Invoice from "./pages/Invoice";
+
 import IncomingPayment from "./pages/IncomingPayment";
 import PurchaseAdd from "./pages/PurchaseAdd";
 import GRPO from "./pages/GRPO";
@@ -53,6 +53,10 @@ import VendorsAdd from "./pages/VendorsAdd";
 import VendorsUpdate from "./pages/VendorsUpdate";
 //import SalesView from "./pages/SalesView";
 import SalesUpdate from "./pages/SalesUpdate";
+import Warehouse from "./pages/Warehouse";
+import SalesEmployeeUpdate from "./pages/SalesEmployeeUpdate";
+import ARInvoice from "./pages/ARInvoice";
+import ARInvoiceAdd from "./pages/ARInvoiceAdd";
 
 function Home() {
   const location = useLocation();
@@ -90,7 +94,7 @@ function Home() {
       currentNavItem = "Purchase";
     } else if (
       path.startsWith("/salesorder") ||
-      path.startsWith("/invoice") ||
+      path.startsWith("/arinvoice") ||
       path.startsWith("/arcreditnote") ||
       path.startsWith("/incomingpayment")
     ) {
@@ -112,7 +116,8 @@ function Home() {
       path.startsWith("/productsgroup") ||
       path.startsWith("/uom") ||
       path.startsWith("/uomgroup") ||
-      path.startsWith("/products") // Catches /products, /products/add
+      path.startsWith("/products") || // Catches /products, /products/add
+      path.startsWith("/warehouse") // Catches /products, /products/add
     ) {
       currentNavItem = "Products";
     } else {
@@ -153,6 +158,7 @@ function Home() {
       pathSegment = "customerrelationshipmgmt";
     if (pageName === "Customer Group") pathSegment = "customergroup";
     if (pageName === "UOM") pathSegment = "uom";
+    if (pageName === "Warehouse") pathSegment = "warehouse";
     if (pageName === "UOM Group") pathSegment = "uomgroup";
     if (pageName === "Routess") pathSegment = "routess"; // Ensure you have a route for '/route'
     if (pageName === "Sales Employee") pathSegment = "salesemployee"; // Ensure you have a route for '/salesemployee'
@@ -164,7 +170,7 @@ function Home() {
     if (pageName === "AP Credit Note") pathSegment = "apcreditnote";
 
     if (pageName === "Outgoing Payment") pathSegment = "outgoingpayment"; // Ensure you have a route
-    if (pageName === "Invoice") pathSegment = "invoice";
+    if (pageName === "ARInvoice") pathSegment = "arinvoice";
     if (pageName === "AR Credit Note") pathSegment = "arcreditnote"; // Ensure you have a route for AR Credit Note
     if (pageName === "Incoming Payment") pathSegment = "incomingpayment";
 
@@ -205,6 +211,10 @@ function Home() {
           {/* Add routes for RoutePage and SalesEmployeePage if they exist */}
           <Route path="/routess" element={<Routess />} />
           <Route path="/salesemployee" element={<SalesEmployee />} />
+          <Route
+            path="/salesemployee/update/:id"
+            element={<SalesEmployeeUpdate />}
+          />
           <Route path="/shippingtype" element={<ShippingType />} />
           <Route path="/tax" element={<Tax />} />
           {/* Assuming Routess handles Shipping Type */}
@@ -219,6 +229,7 @@ function Home() {
           <Route path="/productsgroup" element={<ProductsGroup />} />
           <Route path="/uom" element={<UOM />} />
           <Route path="/uomgroup" element={<UOMGroup />} />
+          <Route path="/warehouse" element={<Warehouse />} />
           {/* Purchase Routes */}
           <Route path="/purchaseorder" element={<Purchase />} />
           <Route path="/purchaseorder/add" element={<PurchaseAdd />} />
@@ -231,7 +242,8 @@ function Home() {
           <Route path="/salesorder/add" element={<SalesAdd />} />
           <Route path="/salesorder/view/:soId" element={<SalesUpdate />} />
           {/* This is the new route */}
-          <Route path="/invoice" element={<Invoice />} />
+          <Route path="/arinvoice" element={<ARInvoice />} />
+          <Route path="/arinvoice/add" element={<ARInvoiceAdd />} />
           <Route path="/arcreditnote" element={<ARCreditNote />} />
           <Route path="/incomingpayment" element={<IncomingPayment />} />
           {/* Other Main Routes */}

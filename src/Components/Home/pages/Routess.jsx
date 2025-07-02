@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react";
-import "./Routess.css"; // We'll create this CSS file next
+import "./Routess.css";
 
-const API_BASE_URL = "https://localhost:7074/api"; // Your API's base URL
+// Step 1: Import the reusable pagination hook and component
+import useDynamicPagination from "../../../hooks/useDynamicPagination";
+import Pagination from "../../Common/Pagination";
+
+const API_BASE_URL = "https://localhost:7074/api";
 
 // Simple Modal Component for messages
 const MessageModal = ({ message, onClose, type = "success", isActive }) => {
   if (!isActive || !message) return null;
   return (
     <div className="rt-modal-overlay">
-      {" "}
-      {/* rt for Route */}
       <div className={`rt-modal-content ${type}`}>
         <p>{message}</p>
         <button onClick={onClose} className="rt-modal-close-button">
@@ -32,6 +34,10 @@ const Routess = () => {
     isActive: false,
   });
 
+  // Step 2: Instantiate the pagination hook with 4 items per page
+  const pagination = useDynamicPagination(routes, { fixedItemsPerPage: 4 });
+  const { currentPageData, currentPage, setCurrentPage } = pagination;
+
   const showModal = (message, type = "info") => {
     setModalState({ message, type, isActive: true });
   };
@@ -43,7 +49,6 @@ const Routess = () => {
   const fetchRoutes = useCallback(async () => {
     setIsLoading(true);
     try {
-      // *** CHANGE API ENDPOINT FOR ROUTES ***
       const response = await fetch(`${API_BASE_URL}/Routes`);
       if (!response.ok) {
         let errorMsg = `Error fetching routes: ${response.status} ${response.statusText}`;
@@ -56,7 +61,7 @@ const Routess = () => {
             (typeof errorData === "string" && errorData) ||
             errorMsg;
         } catch (e) {
-          /* ignore parse error, use default */
+          /* ignore parse error */
         }
         throw new Error(errorMsg);
       }
@@ -84,99 +89,38 @@ const Routess = () => {
     }
 
     setIsSubmitting(true);
-    closeModal(); // Clear previous modal messages
+    closeModal();
 
     const routeData = {
       name: newRouteName.trim(),
-      // Add other properties if your Route object needs them
     };
 
     try {
-      // *** CHANGE API ENDPOINT FOR ROUTES ***
       const response = await fetch(`${API_BASE_URL}/Routes`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(routeData),
       });
 
       if (!response.ok) {
-        let apiErrorMessage = `Error: ${response.status} ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          // This error handling is copied from CustomerGroup,
-          // you might need to adjust it based on your /Route API's error response structure
-          if (errorData) {
-            if (response.status === 400 || response.status === 409) {
-              const nameErrorArray = errorData.Name || errorData.name; // Check for 'Name' or 'name'
-              const title = errorData.title?.toLowerCase();
-              const detail = errorData.detail?.toLowerCase();
-              const message =
-                typeof errorData.message === "string"
-                  ? errorData.message.toLowerCase()
-                  : null;
-              const errorDataStr =
-                typeof errorData === "string" ? errorData.toLowerCase() : null;
-
-              if (
-                (nameErrorArray &&
-                  Array.isArray(nameErrorArray) &&
-                  nameErrorArray.some((err) =>
-                    err.toLowerCase().includes("already exist")
-                  )) ||
-                (title && title.includes("already exist")) ||
-                (detail && detail.includes("already exist")) ||
-                (message && message.includes("already exist")) ||
-                (errorDataStr && errorDataStr.includes("already exist"))
-              ) {
-                apiErrorMessage = "Route Already Exists!"; // Changed message
-              } else {
-                if (nameErrorArray && Array.isArray(nameErrorArray)) {
-                  apiErrorMessage = nameErrorArray.join(" ");
-                } else if (errorData.title) {
-                  apiErrorMessage = errorData.title;
-                } else if (errorData.detail) {
-                  apiErrorMessage = errorData.detail;
-                } else if (
-                  errorData.message &&
-                  typeof errorData.message === "string"
-                ) {
-                  apiErrorMessage = errorData.message;
-                } else if (errorDataStr) {
-                  apiErrorMessage = errorData;
-                }
-              }
-            } else {
-              const nameErrorArray = errorData.Name || errorData.name;
-              if (nameErrorArray && Array.isArray(nameErrorArray)) {
-                apiErrorMessage = nameErrorArray.join(" ");
-              } else if (errorData.title) {
-                apiErrorMessage = errorData.title;
-              } else if (errorData.detail) {
-                apiErrorMessage = errorData.detail;
-              } else if (
-                errorData.message &&
-                typeof errorData.message === "string"
-              ) {
-                apiErrorMessage = errorData.message;
-              } else if (typeof errorData === "string") {
-                apiErrorMessage = errorData;
-              }
-            }
-          }
-        } catch (parseError) {
-          /* console.warn("Failed to parse API error response as JSON:", parseError); */
+        // Simplified error handling
+        const errorText = await response.text();
+        if (errorText.toLowerCase().includes("already exist")) {
+          throw new Error("Route Already Exists!");
         }
-        throw new Error(apiErrorMessage);
+        throw new Error(
+          errorText || `Request failed with status ${response.status}`
+        );
       }
 
-      showModal("Route added successfully!", "success"); // Changed message
+      showModal("Route added successfully!", "success");
       setNewRouteName("");
-      fetchRoutes(); // Refresh the list
+      await fetchRoutes();
+      // Step 3: Reset to page 1 after adding a new route
+      setCurrentPage(1);
     } catch (e) {
       console.error("Failed to add route:", e);
-      showModal(e.message || "Failed to add route. Please try again.", "error"); // Changed message
+      showModal(e.message || "Failed to add route. Please try again.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -184,45 +128,44 @@ const Routess = () => {
 
   return (
     <div className="rt-page-content">
-      {/* rt for Route */}
       <MessageModal
         message={modalState.message}
         onClose={closeModal}
         type={modalState.type}
         isActive={modalState.isActive}
       />
-      <h1 className="rt-main-title">Route Management</h1> {/* Changed title */}
-      {/* Table Section */}
+      <h1 className="rt-main-title">Route Management</h1>
+
       <div className="table-responsive-container">
         <table className="data-table">
           <thead>
             <tr>
               <th className="rt-th-serial">Serial No.</th>
               <th className="rt-th-routename">Route Name</th>
-              {/* Changed column header */}
-              {/* Add more <th> if your Route object has more displayable fields */}
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
                 <td colSpan="2" className="rt-loading-cell">
-                  {/* Adjust colSpan if more columns */}
                   Loading routes...
                 </td>
               </tr>
             )}
             {!isLoading &&
-              routes.map((route, index) => (
+              // Step 4: Map over the paginated data
+              currentPageData.map((route, index) => (
                 <tr key={route.id || index}>
-                  <td className="rt-td-serial">{index + 1}</td>
+                  {/* Step 5: Calculate the serial number correctly */}
+                  <td className="rt-td-serial">
+                    {(currentPage - 1) * 4 + index + 1}
+                  </td>
                   <td>{route.name}</td>
                 </tr>
               ))}
             {!isLoading && routes.length === 0 && !modalState.isActive && (
               <tr>
                 <td colSpan="2" className="no-data-cell">
-                  {/* Adjust colSpan if more columns */}
                   No routes found.
                 </td>
               </tr>
@@ -230,23 +173,30 @@ const Routess = () => {
           </tbody>
         </table>
       </div>
-      {/* Create Section */}
+
+      {/* Step 6: Add the Pagination component */}
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        onNext={pagination.nextPage}
+        onPrevious={pagination.prevPage}
+      />
+
       <div className="rt-create-section">
-        <h3 className="rt-create-title">Create New Route</h3>{" "}
-        {/* Changed title */}
+        <h3 className="rt-create-title">Create New Route</h3>
         <div className="rt-form-row">
           <label htmlFor="routeNameInput" className="rt-label">
-            Route Name : {/* Changed label */}
+            Route Name :
           </label>
           <input
             type="text"
-            id="routeNameInput" // Changed id
+            id="routeNameInput"
             className="rt-input"
             value={newRouteName}
             onChange={(e) => {
               setNewRouteName(e.target.value);
             }}
-            placeholder="Enter route name" // Changed placeholder
+            placeholder="Enter route name"
             disabled={isSubmitting || isLoading}
           />
         </div>
@@ -256,7 +206,7 @@ const Routess = () => {
           onClick={handleAddRoute}
           disabled={isSubmitting || isLoading}
         >
-          {isSubmitting ? "Adding..." : "Add Route"} {/* Changed button text */}
+          {isSubmitting ? "Adding..." : "Add Route"}
         </button>
       </div>
     </div>

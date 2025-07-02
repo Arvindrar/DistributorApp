@@ -6,6 +6,7 @@ import {
   API_PRODUCT_GROUPS_ENDPOINT,
   API_UOM_ENDPOINT,
   API_UOM_GROUP_ENDPOINT,
+  PLACEHOLDER_IMG_PATH,
 } from "../../../config";
 
 const MANUAL_UOM_ENTRY_VALUE = "__MANUAL_ENTRY__";
@@ -43,7 +44,8 @@ function ProductsAdd() {
   const [formData, setFormData] = useState(initialFormData);
   const [manualUomValue, setManualUomValue] = useState("");
   const [imageFile, setImageFile] = useState(null);
-
+  const [currentImageUrl, setCurrentImageUrl] = useState(PLACEHOLDER_IMG_PATH);
+  const [isImageLoading, setIsImageLoading] = useState(true);
   const [productGroupOptions, setProductGroupOptions] = useState([]);
   const [isLoadingProductGroups, setIsLoadingProductGroups] = useState(true);
 
@@ -177,11 +179,14 @@ function ProductsAdd() {
         e.target.value = null;
         return;
       }
+      setIsImageLoading(true);
       setImageFile(file);
       setFormData((prev) => ({ ...prev, imageFileName: file.name }));
+      setCurrentImageUrl(URL.createObjectURL(file));
     } else {
       setImageFile(null);
       setFormData((prev) => ({ ...prev, imageFileName: "" }));
+      setCurrentImageUrl(PLACEHOLDER_IMG_PATH);
     }
   };
 
@@ -320,6 +325,7 @@ function ProductsAdd() {
       setFormData(initialFormData);
       setManualUomValue("");
       setImageFile(null);
+      setCurrentImageUrl(PLACEHOLDER_IMG_PATH);
       if (fileInputRef.current) fileInputRef.current.value = "";
       navigate("/products", { state: { refreshProducts: true } });
     }
@@ -450,6 +456,22 @@ function ProductsAdd() {
                   />
                 )}
               </div>
+            </div>
+
+            <div className="pa-field-group">
+              <label>Image Preview:</label>
+              <img
+                src={currentImageUrl}
+                alt="Product image preview"
+                className="pa-current-image-preview"
+                onLoad={() => setIsImageLoading(false)}
+                // Apply opacity style based on our loading state
+                style={{ opacity: isImageLoading ? 0 : 1 }}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = PLACEHOLDER_IMG_PATH;
+                }}
+              />
             </div>
 
             <div className="pa-field-group">

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Vendors.css"; // MODIFIED: CSS import
+import useDynamicPagination from "../../../hooks/useDynamicPagination"; // Adjust path as needed
+import Pagination from "../../Common/Pagination"; // Adjust path as needed
 
 const API_BASE_URL = "https://localhost:7074/api"; // Your API Base URL
 
@@ -17,6 +19,9 @@ function Vendors() {
   const [error, setError] = useState(null);
 
   const searchTimeout = useRef(null);
+  // --- Pagination Hook ---
+  const pagination = useDynamicPagination(vendors, { fixedItemsPerPage: 8 });
+  const { currentPageData, currentPage, setCurrentPage } = pagination;
 
   const fetchVendorGroups = useCallback(async () => {
     setIsLoadingGroups(true);
@@ -94,10 +99,12 @@ function Vendors() {
 
   const handleGroupChange = (event) => {
     setSelectedGroup(event.target.value);
+    setCurrentPage(1);
   };
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
+    setCurrentPage(1);
   };
 
   const handleAddClick = () => {
@@ -134,14 +141,11 @@ function Vendors() {
 
   return (
     <div className="vms-page-content">
-      {" "}
       {/* MODIFIED: CSS Class */}
       <h1>Vendor Master Data</h1> {/* MODIFIED: Title */}
       <div className="vms-filter-controls-container-inline">
-        {" "}
         {/* MODIFIED: CSS Class */}
         <div className="vms-filter-item-inline">
-          {" "}
           {/* MODIFIED: CSS Class */}
           <span className="vms-filter-label-inline">Vendor Group:</span>{" "}
           {/* MODIFIED: Text & CSS Class */}
@@ -168,7 +172,6 @@ function Vendors() {
           </select>
         </div>
         <div className="vms-filter-item-inline">
-          {" "}
           {/* MODIFIED: CSS Class */}
           <span className="vms-filter-label-inline">Search:</span>{" "}
           {/* MODIFIED: CSS Class */}
@@ -183,7 +186,6 @@ function Vendors() {
           />
         </div>
         <div className="vms-add-new-action-group">
-          {" "}
           {/* MODIFIED: CSS Class */}
           <span className="vms-add-new-label">Add</span>{" "}
           {/* MODIFIED: CSS Class */}
@@ -228,8 +230,8 @@ function Vendors() {
               </tr>
             </thead>
             <tbody>
-              {vendors.length > 0 ? ( // MODIFIED: Variable name
-                vendors.map(
+              {currentPageData.length > 0 ? ( // MODIFIED: Variable name
+                currentPageData.map(
                   (
                     vendor // MODIFIED: Variable name
                   ) => (
@@ -270,6 +272,12 @@ function Vendors() {
           </table>
         </div>
       )}
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        onNext={pagination.nextPage}
+        onPrevious={pagination.prevPage}
+      />
     </div>
   );
 }

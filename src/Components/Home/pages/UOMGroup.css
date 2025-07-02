@@ -24,39 +24,16 @@
   margin-bottom: 20px;
 }
 
-/* 
-  Styling for the table container specific to UOMGroup page.
-  .table-responsive-container is assumed to be a global utility class.
-*/
-.uomg-table-container {
-  /* Add any UOMGroup-specific styles for the table's container here */
-}
-
-/* 
-  Styling for .data-table specifically within .uomg-page-content.
-  This ensures styles for .data-table are scoped to this component.
-*/
-.uomg-page-content .data-table {
-  /* width: 100%; */
-  /* border-collapse: collapse; */
-}
-
-.uomg-page-content .data-table th,
-.uomg-page-content .data-table td {
-  /* padding: 8px 12px; */
-  /* text-align: left; */
-  /* border-bottom: 1px solid #ddd; */
-}
-
-/* Specific styling for UOMGroup table headers using uomg- prefixes */
+/* Specific styling for UOMGroup table headers */
 .uomg-th-serial,
-.uomg-th-groupname {
-  /* Changed from uomname to groupname for clarity */
+.uomg-th-groupname,
+.uomg-th-description {
   font-weight: bold;
   color: #000000;
+  white-space: nowrap;
 }
 
-/* Specific styling for UOMGroup table data cells using uomg- prefixes */
+/* Specific styling for UOMGroup table data cells */
 .uomg-td-serial {
   font-weight: bold;
   color: #000000;
@@ -64,12 +41,12 @@
   width: 100px;
 }
 
-.uomg-td-name {
-  /* Specific class for the name cell in UOMGroup table */
-  color: #333;
+.uomg-td-description {
+  color: #495057; /* A standard secondary text color */
+  font-size: 0.9em;
 }
 
-/* Styling for the 'no-data-cell' if you want it specific to UOMGroup tables */
+/* Styling for the 'no-data-cell' */
 .uomg-page-content .data-table .no-data-cell {
   text-align: center;
   padding: 20px;
@@ -82,7 +59,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 15px;
+  gap: 20px; /* Increased gap for better separation */
   margin-top: 25px;
   padding-top: 20px;
   border-top: 1px solid #eee;
@@ -92,14 +69,15 @@
   font-size: 1.7em;
   font-weight: bold;
   color: #000000;
-  padding-bottom: 10px;
   margin: 0;
 }
 
+/* Form Row for a vertical label-input layout */
 .uomg-form-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column; /* Stack label and input vertically */
+  align-items: flex-start;
+  gap: 6px; /* Space between label and input */
   width: 100%;
   max-width: 550px;
 }
@@ -108,41 +86,47 @@
   font-size: 1em;
   font-weight: bold;
   color: #000000;
-  white-space: nowrap;
-  margin-right: 5px;
 }
 
-.uomg-input {
-  padding: 4px 10px;
+/* Common styles for both input and textarea */
+.uomg-input,
+.uomg-textarea {
+  padding: 8px 10px;
   font-size: 13px;
   line-height: 1.5;
   color: #333;
   background-color: #fff;
-  background-clip: padding-box;
   border: 1px solid #ccc;
   border-radius: 0.19rem;
   border-bottom-color: #0a0a0a;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  flex-grow: 1;
-  height: 27px;
+  width: 100%;
   box-sizing: border-box;
 }
 
-.uomg-input::placeholder {
+.uomg-input::placeholder,
+.uomg-textarea::placeholder {
   color: #777;
   opacity: 1;
 }
 
-.uomg-input:focus {
+.uomg-input:focus,
+.uomg-textarea:focus {
   border-color: #80bdff;
   outline: 0;
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
+/* Specific style for textarea */
+.uomg-textarea {
+  resize: vertical; /* Allow vertical resizing, disable horizontal */
+  min-height: 60px;
+}
+
 .uomg-add-button {
-  padding: 5px 20px;
+  padding: 8px 25px; /* Slightly larger padding */
   font-size: 14px;
-  font-weight: normal;
+  font-weight: 500;
   color: #ffffff;
   background-color: #007bff;
   border: 1px solid #007bff;

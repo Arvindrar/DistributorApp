@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react";
-import "./ShippingType.css"; // We'll create this CSS file next
+import "./ShippingType.css";
 
-const API_BASE_URL = "https://localhost:7074/api"; // Your API's base URL
+// Step 1: Import the reusable pagination hook and component
+import useDynamicPagination from "../../../hooks/useDynamicPagination";
+import Pagination from "../../Common/Pagination";
+
+const API_BASE_URL = "https://localhost:7074/api";
 
 // Simple Modal Component for messages
 const MessageModal = ({ message, onClose, type = "success", isActive }) => {
   if (!isActive || !message) return null;
   return (
     <div className="st-modal-overlay">
-      {" "}
-      {/* st for ShippingType */}
       <div className={`st-modal-content ${type}`}>
         <p>{message}</p>
         <button onClick={onClose} className="st-modal-close-button">
@@ -32,6 +34,12 @@ const ShippingType = () => {
     isActive: false,
   });
 
+  // Step 2: Instantiate the pagination hook with 4 items per page
+  const pagination = useDynamicPagination(shippingTypes, {
+    fixedItemsPerPage: 4,
+  });
+  const { currentPageData, currentPage, setCurrentPage } = pagination;
+
   const showModal = (message, type = "info") => {
     setModalState({ message, type, isActive: true });
   };
@@ -43,7 +51,6 @@ const ShippingType = () => {
   const fetchShippingTypes = useCallback(async () => {
     setIsLoading(true);
     try {
-      // *** IMPORTANT: Verify this API endpoint for fetching shipping types ***
       const response = await fetch(`${API_BASE_URL}/ShippingType`);
       if (!response.ok) {
         let errorMsg = `Error fetching shipping types: ${response.status} ${response.statusText}`;
@@ -56,7 +63,7 @@ const ShippingType = () => {
             (typeof errorData === "string" && errorData) ||
             errorMsg;
         } catch (e) {
-          /* ignore parse error, use default */
+          /* ignore parse error */
         }
         throw new Error(errorMsg);
       }
@@ -88,91 +95,31 @@ const ShippingType = () => {
 
     const shippingTypeData = {
       name: newShippingTypeName.trim(),
-      // Add other properties if your ShippingType object needs them
     };
 
     try {
-      // *** IMPORTANT: Verify this API endpoint for creating a shipping type ***
       const response = await fetch(`${API_BASE_URL}/ShippingType`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(shippingTypeData),
       });
 
       if (!response.ok) {
-        let apiErrorMessage = `Error: ${response.status} ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          if (errorData) {
-            if (response.status === 400 || response.status === 409) {
-              const nameErrorArray = errorData.Name || errorData.name;
-              const title = errorData.title?.toLowerCase();
-              const detail = errorData.detail?.toLowerCase();
-              const message =
-                typeof errorData.message === "string"
-                  ? errorData.message.toLowerCase()
-                  : null;
-              const errorDataStr =
-                typeof errorData === "string" ? errorData.toLowerCase() : null;
-
-              if (
-                (nameErrorArray &&
-                  Array.isArray(nameErrorArray) &&
-                  nameErrorArray.some((err) =>
-                    err.toLowerCase().includes("already exist")
-                  )) ||
-                (title && title.includes("already exist")) ||
-                (detail && detail.includes("already exist")) ||
-                (message && message.includes("already exist")) ||
-                (errorDataStr && errorDataStr.includes("already exist"))
-              ) {
-                apiErrorMessage =
-                  "Shipping Type with this name already exists!";
-              } else {
-                if (nameErrorArray && Array.isArray(nameErrorArray)) {
-                  apiErrorMessage = nameErrorArray.join(" ");
-                } else if (errorData.title) {
-                  apiErrorMessage = errorData.title;
-                } else if (errorData.detail) {
-                  apiErrorMessage = errorData.detail;
-                } else if (
-                  errorData.message &&
-                  typeof errorData.message === "string"
-                ) {
-                  apiErrorMessage = errorData.message;
-                } else if (errorDataStr) {
-                  apiErrorMessage = errorData;
-                }
-              }
-            } else {
-              const nameErrorArray = errorData.Name || errorData.name;
-              if (nameErrorArray && Array.isArray(nameErrorArray)) {
-                apiErrorMessage = nameErrorArray.join(" ");
-              } else if (errorData.title) {
-                apiErrorMessage = errorData.title;
-              } else if (errorData.detail) {
-                apiErrorMessage = errorData.detail;
-              } else if (
-                errorData.message &&
-                typeof errorData.message === "string"
-              ) {
-                apiErrorMessage = errorData.message;
-              } else if (typeof errorData === "string") {
-                apiErrorMessage = errorData;
-              }
-            }
-          }
-        } catch (parseError) {
-          /* console.warn("Failed to parse API error response as JSON:", parseError); */
+        // Simplified error handling
+        const errorText = await response.text();
+        if (errorText.toLowerCase().includes("already exist")) {
+          throw new Error("Shipping Type with this name already exists!");
         }
-        throw new Error(apiErrorMessage);
+        throw new Error(
+          errorText || `Request failed with status ${response.status}`
+        );
       }
 
       showModal("Shipping Type added successfully!", "success");
       setNewShippingTypeName("");
-      fetchShippingTypes(); // Refresh the list
+      await fetchShippingTypes();
+      // Step 3: Reset to page 1 after adding a new shipping type
+      setCurrentPage(1);
     } catch (e) {
       console.error("Failed to add shipping type:", e);
       showModal(
@@ -186,8 +133,6 @@ const ShippingType = () => {
 
   return (
     <div className="st-page-content">
-      {" "}
-      {/* st for ShippingType */}
       <MessageModal
         message={modalState.message}
         onClose={closeModal}
@@ -195,7 +140,7 @@ const ShippingType = () => {
         isActive={modalState.isActive}
       />
       <h1 className="st-main-title">Shipping Type Management</h1>
-      {/* Table Section */}
+
       <div className="table-responsive-container">
         <table className="data-table">
           <thead>
@@ -213,12 +158,14 @@ const ShippingType = () => {
               </tr>
             )}
             {!isLoading &&
-              shippingTypes.map((type, index) => (
+              // Step 4: Map over the paginated data
+              currentPageData.map((type, index) => (
                 <tr key={type.id || index}>
-                  {" "}
-                  {/* Prefer backend ID */}
-                  <td className="st-td-serial">{index + 1}</td>
-                  <td>{type.name}</td> {/* Assuming 'name' property */}
+                  {/* Step 5: Calculate the serial number correctly */}
+                  <td className="st-td-serial">
+                    {(currentPage - 1) * 4 + index + 1}
+                  </td>
+                  <td>{type.name}</td>
                 </tr>
               ))}
             {!isLoading &&
@@ -233,7 +180,15 @@ const ShippingType = () => {
           </tbody>
         </table>
       </div>
-      {/* Create Section */}
+
+      {/* Step 6: Add the Pagination component */}
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        onNext={pagination.nextPage}
+        onPrevious={pagination.prevPage}
+      />
+
       <div className="st-create-section">
         <h3 className="st-create-title">Add New Shipping Type</h3>
         <div className="st-form-row">

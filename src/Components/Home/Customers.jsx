@@ -2,6 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Customers.css";
 
+// Step 1: Import the reusable pagination hook and component
+import useDynamicPagination from "../../hooks/useDynamicPagination";
+import Pagination from "../Common/Pagination";
+
 const API_BASE_URL = "https://localhost:7074/api";
 
 function Customers() {
@@ -10,17 +14,17 @@ function Customers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [customers, setCustomers] = useState([]);
   const [customerGroupOptions, setCustomerGroupOptions] = useState([]);
-
-  // isLoading is specifically for the customer list fetching
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingGroups, setIsLoadingGroups] = useState(true);
   const [error, setError] = useState(null);
-
   const searchTimeout = useRef(null);
+
+  // Step 2: Instantiate the pagination hook with 8 items per page
+  const pagination = useDynamicPagination(customers, { fixedItemsPerPage: 8 });
+  const { currentPageData, setCurrentPage } = pagination;
 
   const fetchCustomerGroups = useCallback(async () => {
     setIsLoadingGroups(true);
-    //setError(null); // Clear group-specific error if you had one
     try {
       const response = await fetch(`${API_BASE_URL}/CustomerGroup`);
       if (!response.ok) {
@@ -36,8 +40,6 @@ function Customers() {
       setCustomerGroupOptions(options);
     } catch (e) {
       console.error("Failed to fetch customer groups:", e);
-      // Set error state if group fetching fails and it's critical
-      // setError("Failed to load customer groups. Filtering by group may not work.");
       setCustomerGroupOptions([]);
     } finally {
       setIsLoadingGroups(false);
@@ -45,8 +47,8 @@ function Customers() {
   }, []);
 
   const fetchCustomers = useCallback(async (group, search) => {
-    setIsLoading(true); // Indicates customer list is loading/re-loading
-    setError(null); // Clear previous customer fetch errors
+    setIsLoading(true);
+    setError(null);
     let url = `${API_BASE_URL}/Customer?`;
     const params = new URLSearchParams();
     if (group) params.append("group", group);
@@ -76,7 +78,7 @@ function Customers() {
       setError(
         e.message || "Failed to load customers. Please try again later."
       );
-      setCustomers([]); // Clear customers on error
+      setCustomers([]);
     } finally {
       setIsLoading(false);
     }
@@ -87,21 +89,23 @@ function Customers() {
   }, [fetchCustomerGroups]);
 
   useEffect(() => {
-    // This effect will also trigger an initial fetch when the component mounts
-    // as selectedGroup and searchTerm are initially ""
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(() => {
       fetchCustomers(selectedGroup, searchTerm);
-    }, 400); // Debounce time
+    }, 400);
     return () => clearTimeout(searchTimeout.current);
   }, [searchTerm, selectedGroup, fetchCustomers]);
 
   const handleGroupChange = (event) => {
     setSelectedGroup(event.target.value);
+    // Step 3: Reset to page 1 on filter change to avoid empty page bug
+    setCurrentPage(1);
   };
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
+    // Step 3: Reset to page 1 on search change
+    setCurrentPage(1);
   };
 
   const handleAddClick = () => {
@@ -117,8 +121,7 @@ function Customers() {
 
   const handleCustomerCodeClick = (e, customerId) => {
     e.preventDefault();
-    console.log(`Customer: ${customerId}`);
-    navigate(`/customers/update/${customerId}`); // Ensure this route is correct
+    navigate(`/customers/update/${customerId}`);
   };
 
   const getDisplayAddress = (customer) => {
@@ -134,8 +137,6 @@ function Customers() {
     return parts.filter(Boolean).join(", ");
   };
 
-  // Render the main page structure.
-  // Conditional rendering will happen for the table area.
   return (
     <div className="page-content">
       <h1>Customer Master Data</h1>
@@ -147,7 +148,7 @@ function Customers() {
             className="filter-select-inline"
             value={selectedGroup}
             onChange={handleGroupChange}
-            disabled={isLoadingGroups} // Disable select while groups are loading
+            disabled={isLoadingGroups}
           >
             <option value="">
               {isLoadingGroups ? "Loading groups..." : "All Groups"}
@@ -186,7 +187,6 @@ function Customers() {
         </div>
       </div>
 
-      {/* Table Area: Handles its own loading and error states */}
       {error && (
         <div
           className="error-message"
@@ -196,63 +196,68 @@ function Customers() {
         </div>
       )}
 
-      {!error &&
-        isLoading && ( // Show loading indicator for the table if customers are being fetched
-          <div style={{ marginTop: "20px", textAlign: "center" }}>
-            Loading customer data...
-          </div>
-        )}
+      {!error && isLoading && (
+        <div style={{ marginTop: "20px", textAlign: "center" }}>
+          Loading customer data...
+        </div>
+      )}
 
-      {!error &&
-        !isLoading && ( // Display table or "no data" message
-          <div className="table-responsive-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Customer Code</th>
-                  <th>Name</th>
-                  <th>Address</th>
-                  <th>Route</th>
-                  <th>Sales Employee</th>
-                  <th>Account Balance</th>
-                  <th>Remarks</th>
-                </tr>
-              </thead>
-              <tbody>
-                {customers.length > 0 ? (
-                  customers.map((customer) => (
-                    <tr key={customer.id}>
-                      <td>
-                        <a
-                          href="#"
-                          onClick={(e) =>
-                            handleCustomerCodeClick(e, customer.id)
-                          }
-                          className="table-data-link"
-                          title="Click to update customer"
-                        >
-                          {customer.code}
-                        </a>
-                      </td>
-                      <td>{customer.name}</td>
-                      <td>{getDisplayAddress(customer)}</td>
-                      <td>{customer.route || "N/A"}</td>
-                      <td>{customer.employee || "N/A"}</td>
-                      <td>{formatCurrency(customer.balance)}</td>
-                      <td>{customer.remarks || "N/A"}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="7" className="no-data-cell">
-                      No customers found matching your criteria.
+      {!error && !isLoading && (
+        <div className="table-responsive-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Customer Code</th>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Route</th>
+                <th>Sales Employee</th>
+                <th>Account Balance</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Step 4: Map over the paginated data */}
+              {currentPageData.length > 0 ? (
+                currentPageData.map((customer) => (
+                  <tr key={customer.id}>
+                    <td>
+                      <a
+                        href="#"
+                        onClick={(e) => handleCustomerCodeClick(e, customer.id)}
+                        className="table-data-link"
+                        title="Click to update customer"
+                      >
+                        {customer.code}
+                      </a>
                     </td>
+                    <td>{customer.name}</td>
+                    <td>{getDisplayAddress(customer)}</td>
+                    <td>{customer.route || "N/A"}</td>
+                    <td>{customer.employee || "N/A"}</td>
+                    <td>{formatCurrency(customer.balance)}</td>
+                    <td>{customer.remarks || "N/A"}</td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="no-data-cell">
+                    No customers found matching your criteria.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Step 5: Add the Pagination component */}
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        onNext={pagination.nextPage}
+        onPrevious={pagination.prevPage}
+      />
     </div>
   );
 }
