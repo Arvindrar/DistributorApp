@@ -868,6 +868,7 @@ function GRPOadd() {
                 + Add Row
               </button>
             </div>
+
             <div className="table-responsive-container">
               <table className="grpo-add__items-table">
                 <thead>
@@ -887,7 +888,7 @@ function GRPOadd() {
                 <tbody>
                   {grpoItems.map((item) => (
                     <tr key={item.id}>
-                      <td className="editable-cell product-code-cell">
+                      <td className="editable-cell">
                         <div className="input-icon-wrapper">
                           <input
                             type="text"
@@ -905,7 +906,7 @@ function GRPOadd() {
                           </button>
                         </div>
                       </td>
-                      <td className="editable-cell product-name-cell">
+                      <td className="editable-cell">
                         <div className="input-icon-wrapper">
                           <input
                             type="text"
@@ -930,7 +931,7 @@ function GRPOadd() {
                           onChange={(e) =>
                             handleItemChange(e, item.id, "quantity")
                           }
-                          className="grpo-add__table-input grpo-add__quantity-input"
+                          className="grpo-add__table-input"
                         />
                       </td>
                       <td className="editable-cell">
@@ -938,9 +939,10 @@ function GRPOadd() {
                           <input
                             type="text"
                             value={item.uom}
-                            className="grpo-add__table-input grpo-add__uom-input"
-                            readOnly
-                            onClick={() => openUOMModal(item.id)}
+                            onChange={(e) =>
+                              handleItemChange(e, item.id, "uom")
+                            }
+                            className="grpo-add__table-input"
                           />
                           <button
                             type="button"
@@ -955,7 +957,7 @@ function GRPOadd() {
                         <input
                           type="number"
                           value={item.price}
-                          className="grpo-add__table-input grpo-add__price-input"
+                          className="grpo-add__table-input"
                           readOnly
                         />
                       </td>
@@ -977,12 +979,12 @@ function GRPOadd() {
                           </button>
                         </div>
                       </td>
-                      <td className="editable-cell tax-cell">
+                      <td className="editable-cell">
                         <div className="input-icon-wrapper">
                           <input
                             type="text"
                             value={item.taxCode}
-                            className="grpo-add__table-input grpo-add__tax-input"
+                            className="grpo-add__table-input"
                             readOnly
                             onClick={() => openTaxModal(item.id)}
                           />
@@ -1000,7 +1002,7 @@ function GRPOadd() {
                           type="number"
                           value={item.taxPrice}
                           readOnly
-                          className="grpo-add__table-input grpo-add__tax-input"
+                          className="grpo-add__table-input"
                         />
                       </td>
                       <td className="total-cell">{item.total}</td>
@@ -1018,9 +1020,10 @@ function GRPOadd() {
                 </tbody>
               </table>
             </div>
+
             <div className="tax-summary-container">
               <div className="summary-item">
-                <label>Product Total without Tax:</label>
+                <label className="summary-label">Product Total w/o Tax:</label>
                 <input
                   type="text"
                   readOnly
@@ -1029,7 +1032,7 @@ function GRPOadd() {
                 />
               </div>
               <div className="summary-item">
-                <label>Tax Total:</label>
+                <label className="summary-label">Tax Total:</label>
                 <input
                   type="text"
                   readOnly
@@ -1038,7 +1041,7 @@ function GRPOadd() {
                 />
               </div>
               <div className="summary-item">
-                <label>Net Total:</label>
+                <label className="summary-label">Net Total:</label>
                 <input
                   type="text"
                   readOnly
@@ -1051,15 +1054,13 @@ function GRPOadd() {
         </div>
 
         <div className="detail-page-footer">
-          <div className="footer-actions-main">
-            <button
-              className="footer-btn primary"
-              onClick={handleSave}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Saving..." : "Create GRPO"}
-            </button>
-          </div>
+          <button
+            className="footer-btn primary"
+            onClick={handleSave}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Saving..." : "Create GRPO"}
+          </button>
           <button
             className="footer-btn secondary"
             onClick={() => navigate("/grpo")}

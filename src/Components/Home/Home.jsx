@@ -57,6 +57,7 @@ import Warehouse from "./pages/Warehouse";
 import SalesEmployeeUpdate from "./pages/SalesEmployeeUpdate";
 import ARInvoice from "./pages/ARInvoice";
 import ARInvoiceAdd from "./pages/ARInvoiceAdd";
+import PurchaseUpdate from "./pages/PurchaseUpdate";
 
 function Home() {
   const location = useLocation();
@@ -233,6 +234,10 @@ function Home() {
           {/* Purchase Routes */}
           <Route path="/purchaseorder" element={<Purchase />} />
           <Route path="/purchaseorder/add" element={<PurchaseAdd />} />
+          <Route
+            path="/purchaseorder/update/:poId"
+            element={<PurchaseUpdate />}
+          />
           <Route path="/grpo" element={<GRPO />} />
           <Route path="/grpo/add" element={<GRPOadd />} />
           <Route path="/apcreditnote" element={<APCreditNote />} />

@@ -185,12 +185,12 @@
   flex-grow: 1;
   padding: 20px 24px;
   background-color: #ffffff;
+  padding-left: 50px;
 }
 .form-section-title {
   font-size: 1.2rem;
   font-weight: 600;
   color: #333333;
-  margin: 0 0 15px 0;
 }
 .grpo-add__items-section {
   width: 100%;
@@ -218,6 +218,37 @@
   overflow-x: auto;
   margin-bottom: 20px;
 }
+.grpo-add__items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.grpo-add__items-table th,
+.grpo-add__items-table td {
+  border: 1px solid #e0e0e0;
+  padding: 2px;
+  text-align: left;
+  vertical-align: middle;
+}
+.grpo-add__items-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  padding: 8px 6px;
+}
+.grpo-add__items-table .editable-cell {
+  position: relative;
+}
+.grpo-add__table-input {
+  width: 100%;
+  height: 100%;
+  padding: 6px;
+  border: none;
+  background-color: transparent;
+  outline: none;
+}
+.grpo-add__table-input:focus {
+  background-color: #eef6ff;
+}
 
 /* Items Table - Direct copy from SalesAdd with prefix change */
 .grpo-add__items-section .grpo-add__items-table {
@@ -238,27 +269,7 @@
   color: #333;
   padding: 8px 6px;
 }
-.grpo-add__items-section .grpo-add__items-table .total-cell {
-  padding: 8px 6px;
-  text-align: right;
-  min-width: 80px;
-  font-weight: 500;
-}
-.grpo-add__items-section .grpo-add__items-table .editable-cell {
-  position: relative;
-}
-.grpo-add__items-section .grpo-add__table-input {
-  width: 100%;
-  height: 100%;
-  padding: 6px;
-  border: none;
-  background-color: transparent;
-  font-size: 0.875rem;
-  box-sizing: border-box;
-  outline: none;
-}
-.grpo-add__items-section .grpo-add__table-input:focus {
-  background-color: #eef6ff;
+.
 }
 .grpo-add__items-section .grpo-add__quantity-input,
 .grpo-add__items-section .grpo-add__price-input,
