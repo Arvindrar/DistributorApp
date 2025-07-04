@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import "./GRPOadd.css";
+import "./GRPOAdd.css";
 import {
   API_PRODUCTS_ENDPOINT,
   API_BASE_URL,
@@ -8,7 +8,7 @@ import {
   API_WAREHOUSE_ENDPOINT,
 } from "../../../config";
 
-// --- Reusable Components (No changes needed here) ---
+// --- Reusable Components ---
 const MessageModal = ({ message, onClose, type = "info" }) => {
   if (!message) return null;
   return (
@@ -23,7 +23,7 @@ const MessageModal = ({ message, onClose, type = "info" }) => {
   );
 };
 const LookupIcon = () => (
-  <span className="lookup-indicator-icon" title="Lookup value">
+  <span className="grpo-lookup-indicator-icon" title="Lookup value">
     ○
   </span>
 );
@@ -41,23 +41,23 @@ const DeleteIcon = () => (
   </svg>
 );
 
-function GRPOadd() {
+function GRPOAdd() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   const initialFormDataState = {
-    grpoNumber: "",
-    poNumber: "",
+    grpoNo: "",
+    purchaseOrderNo: "",
     vendorCode: "",
     vendorName: "",
-    vendorRefNumber: "",
     grpoDate: new Date().toISOString().split("T")[0],
-    dueDate: "",
-    billToAddress: "",
+    deliveryDate: "",
+    vendorRefNumber: "",
+    shipToAddress: "",
     grpoRemarks: "",
     uploadedFiles: [],
   };
-  const [formData, setFormData] = useState(initialFormDataState);
+
   const initialEmptyItem = (id) => ({
     id,
     productCode: "",
@@ -65,11 +65,13 @@ function GRPOadd() {
     quantity: "1",
     uom: "",
     price: "",
-    warehouse: "",
+    warehouseLocation: "",
     taxCode: "",
     taxPrice: "0",
     total: "0.00",
   });
+
+  const [formData, setFormData] = useState(initialFormDataState);
   const [grpoItems, setGrpoItems] = useState([initialEmptyItem(Date.now())]);
   const [modalState, setModalState] = useState({
     message: "",
@@ -77,39 +79,40 @@ function GRPOadd() {
     isActive: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formErrors, setFormErrors] = useState({});
 
+  // Data for Lookups
   const [allProducts, setAllProducts] = useState([]);
-  const [allPurchaseOrders, setAllPurchaseOrders] = useState([]);
   const [allVendors, setAllVendors] = useState([]);
+  const [vendorPurchaseOrders, setVendorPurchaseOrders] = useState([]);
+  const [activeTaxCodes, setActiveTaxCodes] = useState([]);
   const [allUOMs, setAllUOMs] = useState([]);
   const [allWarehouses, setAllWarehouses] = useState([]);
-  const [activeTaxCodes, setActiveTaxCodes] = useState([]);
 
-  const [isPOModalOpen, setIsPOModalOpen] = useState(false);
+  // Modal State Control
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isUOMModalOpen, setIsUOMModalOpen] = useState(false);
-  const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
-  const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
-
-  const [poSearchTerm, setPoSearchTerm] = useState("");
   const [vendorSearchTerm, setVendorSearchTerm] = useState("");
-  const [productModalTargetId, setProductModalTargetId] = useState(null);
+  const [isPOModalOpen, setIsPOModalOpen] = useState(false);
+  const [poSearchTerm, setPoSearchTerm] = useState("");
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [productSearchTerm, setProductSearchTerm] = useState("");
-  const [uomModalTargetId, setUOMModalTargetId] = useState(null);
+  const [productModalTargetId, setProductModalTargetId] = useState(null);
+  const [isUOMModalOpen, setIsUOMModalOpen] = useState(false);
   const [uomSearchTerm, setUomSearchTerm] = useState("");
-  const [warehouseModalTargetId, setWarehouseModalTargetId] = useState(null);
+  const [uomModalTargetId, setUOMModalTargetId] = useState(null);
+  const [isWarehouseModalOpen, setIsWarehouseModalOpen] = useState(false);
   const [warehouseSearchTerm, setWarehouseSearchTerm] = useState("");
-  const [taxModalTargetId, setTaxModalTargetId] = useState(null);
+  const [warehouseModalTargetId, setWarehouseModalTargetId] = useState(null);
+  const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
   const [taxSearchTerm, setTaxSearchTerm] = useState("");
+  const [taxModalTargetId, setTaxModalTargetId] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
 
   const showAppModal = (message, type = "info") =>
     setModalState({ message, type, isActive: true });
   const closeAppModal = () => {
-    if (modalState.type === "success")
-      navigate("/grpo", { state: { refreshGRPOs: true } });
-    else setModalState({ message: "", type: "info", isActive: false });
+    const wasSuccess = modalState.type === "success";
+    setModalState({ message: "", type: "info", isActive: false });
+    if (wasSuccess) navigate("/grpo", { state: { refreshGRPOs: true } });
   };
 
   const fetchDataForLookups = useCallback(
@@ -118,13 +121,14 @@ function GRPOadd() {
         const response = await fetch(endpoint);
         if (!response.ok) throw new Error(`${resourceName} API Error`);
         const data = await response.json();
-        setData(Array.isArray(data) ? data : []);
+        setData(
+          data.filter ? data.filter((item) => item.isActive !== false) : data
+        );
       } catch (error) {
         showAppModal(
           `Error loading ${resourceName}: ${error.message}`,
           "error"
         );
-        setData([]);
       }
     },
     []
@@ -133,11 +137,6 @@ function GRPOadd() {
   useEffect(() => {
     fetchDataForLookups(API_PRODUCTS_ENDPOINT, setAllProducts, "Products");
     fetchDataForLookups(`${API_BASE_URL}/Vendor`, setAllVendors, "Vendors");
-    fetchDataForLookups(
-      `${API_BASE_URL}/PurchaseOrders`,
-      setAllPurchaseOrders,
-      "Purchase Orders"
-    );
     fetchDataForLookups(
       `${API_BASE_URL}/TaxDeclarations`,
       setActiveTaxCodes,
@@ -148,8 +147,8 @@ function GRPOadd() {
   }, [fetchDataForLookups]);
 
   const updateItemTaxAndTotal = useCallback(
-    (items) => {
-      const updatedItems = items.map((item) => {
+    (itemsToUpdate) => {
+      return itemsToUpdate.map((item) => {
         let tax = 0;
         const qty = parseFloat(item.quantity) || 0;
         const price = parseFloat(item.price) || 0;
@@ -166,39 +165,25 @@ function GRPOadd() {
           total: (base + tax).toFixed(2),
         };
       });
-      setGrpoItems(updatedItems);
     },
     [activeTaxCodes]
   );
 
   const handleInputChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  const handleItemChange = (e, itemId, fieldName) => {
-    const { value } = e.target;
-    const newItems = grpoItems.map((item) =>
-      item.id === itemId ? { ...item, [fieldName]: value } : item
-    );
-    setGrpoItems(newItems);
-    if (["quantity", "price"].includes(fieldName)) {
-      updateItemTaxAndTotal(newItems);
-    }
-  };
-
   const handleFileInputChange = (e) => {
     const newFiles = Array.from(e.target.files);
     if (newFiles.length > 0) {
-      setFormData((prev) => ({
-        ...prev,
-        uploadedFiles: [
-          ...prev.uploadedFiles,
-          ...newFiles.filter(
-            (nf) =>
-              !prev.uploadedFiles.some(
-                (ef) => ef.name === nf.name && ef.size === nf.size
-              )
-          ),
-        ],
-      }));
+      setFormData((prev) => {
+        const existingFileNames = prev.uploadedFiles.map((f) => f.name);
+        const uniqueNewFiles = newFiles.filter(
+          (file) => !existingFileNames.includes(file.name)
+        );
+        return {
+          ...prev,
+          uploadedFiles: [...prev.uploadedFiles, ...uniqueNewFiles],
+        };
+      });
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -213,71 +198,152 @@ function GRPOadd() {
   const handleRemoveItem = (id) =>
     setGrpoItems((prev) => prev.filter((item) => item.id !== id));
 
+  const handleItemChange = (e, itemId, fieldName) => {
+    const { value } = e.target;
+    const newItems = grpoItems.map((item) =>
+      item.id === itemId ? { ...item, [fieldName]: value } : item
+    );
+    if (["quantity", "price", "taxCode"].includes(fieldName)) {
+      setGrpoItems(updateItemTaxAndTotal(newItems));
+    } else {
+      setGrpoItems(newItems);
+    }
+  };
+
   const openVendorModal = () => {
     setVendorSearchTerm("");
     setIsVendorModalOpen(true);
   };
-  const openPOModal = () => {
-    if (formData.vendorCode) {
-      setPoSearchTerm("");
-      setIsPOModalOpen(true);
-    } else {
-      showAppModal("Please select a Vendor first.", "info");
+
+  const openPOModal = async () => {
+    if (!formData.vendorCode) {
+      showAppModal("Please select a vendor first.", "info");
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/PurchaseOrders`);
+      if (!response.ok) throw new Error("Could not fetch Purchase Orders.");
+
+      const allPoData = await response.json();
+
+      // The FIX is here: We REMOVED the "&& po.status === 'Open'" check
+      // because your API data does not contain a "status" field.
+      // We now filter ONLY by vendor code.
+      const vendorPOs = allPoData.filter(
+        (po) =>
+          po.vendorCode &&
+          po.vendorCode.trim().toLowerCase() ===
+            formData.vendorCode.trim().toLowerCase()
+      );
+
+      if (vendorPOs.length === 0) {
+        showAppModal(
+          `No Purchase Orders found for vendor: ${formData.vendorName}`,
+          "info"
+        );
+      } else {
+        setVendorPurchaseOrders(vendorPOs);
+        setPoSearchTerm("");
+        setIsPOModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Error in openPOModal:", error);
+      showAppModal(error.message, "error");
     }
   };
-  const openProductModal = (itemId) => {
-    setProductModalTargetId(itemId);
+
+  const openProductModal = (id) => {
+    setProductModalTargetId(id);
     setProductSearchTerm("");
     setIsProductModalOpen(true);
   };
-  const openUOMModal = (itemId) => {
-    setUOMModalTargetId(itemId);
+  const openUOMModal = (id) => {
+    setUOMModalTargetId(id);
     setUomSearchTerm("");
     setIsUOMModalOpen(true);
   };
-  const openWarehouseModal = (itemId) => {
-    setWarehouseModalTargetId(itemId);
+  const openWarehouseModal = (id) => {
+    setWarehouseModalTargetId(id);
     setWarehouseSearchTerm("");
     setIsWarehouseModalOpen(true);
   };
-  const openTaxModal = (itemId) => {
-    setTaxModalTargetId(itemId);
+  const openTaxModal = (id) => {
+    setTaxModalTargetId(id);
     setTaxSearchTerm("");
     setIsTaxModalOpen(true);
   };
 
   const handleSelectVendor = (vendor) => {
-    setFormData((prev) => ({
+    setFormData({
       ...initialFormDataState,
-      poDate: prev.poDate,
+      grpoDate: new Date().toISOString().split("T")[0],
       vendorCode: vendor.code,
       vendorName: vendor.name,
-      billToAddress: [vendor.address1, vendor.city].filter(Boolean).join(", "),
-    }));
+      shipToAddress: [
+        vendor.address1,
+        vendor.address2,
+        vendor.street,
+        vendor.city,
+      ]
+        .filter(Boolean)
+        .join(", "),
+    });
     setGrpoItems([initialEmptyItem(Date.now())]);
+    setVendorPurchaseOrders([]);
     setIsVendorModalOpen(false);
   };
+  const handleSelectPO = async (poSummary) => {
+    setIsSubmitting(true);
+    try {
+      // Step 1: Make a new API call to get the full details of the selected PO
+      // We assume the API endpoint for a single PO is /PurchaseOrders/{id}
+      const response = await fetch(
+        `${API_BASE_URL}/PurchaseOrders/${poSummary.id}`
+      );
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch details for PO #${poSummary.purchaseOrderNo}`
+        );
+      }
+      const fullPoDetails = await response.json();
 
-  const handleSelectPO = (po) => {
-    setFormData((prev) => ({
-      ...prev,
-      poNumber: po.purchaseOrderNo,
-      vendorCode: po.vendorCode,
-      vendorName: po.vendorName,
-      vendorRefNumber: po.vendorRefNumber,
-      billToAddress: po.shipToAddress,
-    }));
-    const itemsFromPO = po.purchaseItems.map((item) => ({
-      ...initialEmptyItem(Date.now() + Math.random()),
-      ...item,
-      price: item.price.toString(),
-      quantity: item.quantity.toString(),
-      warehouse: item.warehouseLocation,
-    }));
-    updateItemTaxAndTotal(
-      itemsFromPO.length > 0 ? itemsFromPO : [initialEmptyItem(Date.now())]
-    );
-    setIsPOModalOpen(false);
+      // Step 2: Use the full details to update the form state
+      setFormData((prev) => ({
+        ...prev,
+        purchaseOrderNo: fullPoDetails.purchaseOrderNo,
+        // Add defensive checks: if a field might be null, provide a fallback
+        deliveryDate: fullPoDetails.deliveryDate
+          ? fullPoDetails.deliveryDate.split("T")[0]
+          : "",
+        vendorRefNumber: fullPoDetails.vendorRefNumber || "",
+        shipToAddress: fullPoDetails.shipToAddress || "",
+        grpoRemarks: fullPoDetails.purchaseRemarks || "",
+      }));
+
+      // Step 3: Use the purchaseItems array from the full details
+      // Add a defensive check here as well (|| []) to prevent crash if purchaseItems is missing
+      const newGrpoItems = (fullPoDetails.purchaseItems || []).map(
+        (item, index) => ({
+          id: Date.now() + index,
+          productCode: item.productCode,
+          productName: item.productName,
+          quantity: item.quantity.toString(),
+          uom: item.uom,
+          price: item.price.toString(),
+          warehouseLocation: item.warehouseLocation,
+          taxCode: item.taxCode || "",
+          taxPrice: "0", // Will be recalculated
+          total: "0.00", // Will be recalculated
+        })
+      );
+
+      setGrpoItems(updateItemTaxAndTotal(newGrpoItems));
+      setIsPOModalOpen(false);
+    } catch (error) {
+      showAppModal(error.message, "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSelectProduct = (product) => {
@@ -292,7 +358,7 @@ function GRPOadd() {
           }
         : item
     );
-    updateItemTaxAndTotal(newItems);
+    setGrpoItems(updateItemTaxAndTotal(newItems));
     setIsProductModalOpen(false);
   };
   const handleSelectUOM = (uom) => {
@@ -307,7 +373,7 @@ function GRPOadd() {
     setGrpoItems((prev) =>
       prev.map((item) =>
         item.id === warehouseModalTargetId
-          ? { ...item, warehouse: wh.code }
+          ? { ...item, warehouseLocation: wh.code }
           : item
       )
     );
@@ -317,15 +383,124 @@ function GRPOadd() {
     const newItems = grpoItems.map((item) =>
       item.id === taxModalTargetId ? { ...item, taxCode: tax.taxCode } : item
     );
-    updateItemTaxAndTotal(newItems);
+    setGrpoItems(updateItemTaxAndTotal(newItems));
     setIsTaxModalOpen(false);
   };
 
   const validateForm = () => {
-    /* ... */ return {};
+    const errors = {};
+    if (!formData.vendorCode.trim() || !formData.vendorName.trim()) {
+      errors.vendorCode = "Vendor Code is required.";
+      errors.vendorName = "Vendor Name is required.";
+    }
+    if (!formData.grpoDate) {
+      errors.grpoDate = "GRPO Date is required.";
+    }
+    if (!formData.deliveryDate) {
+      errors.deliveryDate = "Delivery Date is required.";
+    }
+    if (
+      formData.deliveryDate &&
+      new Date(formData.deliveryDate) < new Date(formData.grpoDate)
+    ) {
+      errors.deliveryDate = "Delivery Date cannot be before GRPO Date.";
+    }
+    if (grpoItems.length === 0) {
+      errors.items = "At least one item must be added.";
+    } else {
+      grpoItems.forEach((item) => {
+        if (!item.productCode.trim()) {
+          errors[`item_${item.id}_product`] = "Product is required.";
+        }
+        if (!item.quantity || parseFloat(item.quantity) <= 0) {
+          errors[`item_${item.id}_quantity`] = "Quantity must be > 0.";
+        }
+        if (
+          item.price === "" ||
+          isNaN(parseFloat(item.price)) ||
+          parseFloat(item.price) < 0
+        ) {
+          errors[`item_${item.id}_price`] = "Price must be a valid number.";
+        }
+        if (!item.uom || !item.uom.trim()) {
+          errors[`item_${item.id}_uom`] = "UOM is required.";
+        }
+        if (!item.warehouseLocation || !item.warehouseLocation.trim()) {
+          errors[`item_${item.id}_warehouseLocation`] =
+            "Warehouse is required.";
+        }
+      });
+    }
+    setFormErrors(errors);
+    return errors;
   };
+
   const handleSave = async () => {
-    /* ... */
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      const errorMessages = Object.values(validationErrors).map(
+        (err) => `- ${err}`
+      );
+      const modalErrorMessage =
+        "Please correct the following errors:\n" + errorMessages.join("\n");
+      showAppModal(modalErrorMessage, "error");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    // Create a FormData payload to handle file uploads
+    const payload = new FormData();
+
+    // Append all header data from the form
+    payload.append("PurchaseOrderNo", formData.purchaseOrderNo);
+    payload.append("VendorCode", formData.vendorCode);
+    payload.append("VendorName", formData.vendorName);
+    payload.append("GRPODate", formData.grpoDate);
+    if (formData.deliveryDate)
+      payload.append("DeliveryDate", formData.deliveryDate);
+    payload.append("VendorRefNumber", formData.vendorRefNumber);
+    payload.append("ShipToAddress", formData.shipToAddress);
+    payload.append("GRPORemarks", formData.grpoRemarks);
+
+    // Prepare and stringify the items array
+    const itemsPayload = grpoItems.map((item) => ({
+      ProductCode: item.productCode,
+      ProductName: item.productName,
+      Quantity: parseFloat(item.quantity) || 0,
+      UOM: item.uom,
+      Price: parseFloat(item.price) || 0,
+      WarehouseLocation: item.warehouseLocation,
+      TaxCode: item.taxCode,
+      TaxPrice: parseFloat(item.taxPrice) || 0,
+      Total: parseFloat(item.total) || 0,
+    }));
+    payload.append("GRPOItemsJson", JSON.stringify(itemsPayload));
+
+    // Append uploaded files
+    formData.uploadedFiles.forEach((file) => {
+      payload.append("UploadedFiles", file, file.name);
+    });
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/GRPOs`, {
+        method: "POST",
+        body: payload,
+        // DO NOT set 'Content-Type': 'multipart/form-data'. The browser does it automatically.
+      });
+
+      const responseData = await response.json();
+      if (!response.ok) {
+        throw new Error(responseData.message || "Failed to create GRPO.");
+      }
+
+      showAppModal(responseData.message, "success");
+    } catch (error) {
+      console.error("Error saving GRPO:", error);
+      showAppModal(error.message, "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const grandTotalSummary = grpoItems
@@ -346,35 +521,34 @@ function GRPOadd() {
         type={modalState.type}
       />
 
-      {/* Lookup Modals */}
+      {/* --- ALL MODAL JSX IS NOW INCLUDED --- */}
       {isVendorModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
+        <div className="lookup-modal-overlay">
+          <div className="lookup-modal-content">
+            <div className="lookup-modal-header">
               <h2>Select Vendor</h2>
               <button
-                className="modal-close-btn"
+                className="lookup-modal-close-btn"
                 onClick={() => setIsVendorModalOpen(false)}
               >
                 ×
               </button>
             </div>
-            <div className="modal-body">
+            <div className="lookup-modal-body">
               <input
                 type="text"
-                placeholder="Search by Code or Name..."
-                className="modal-search-input"
+                placeholder="Search..."
+                className="lookup-modal-search-input"
                 value={vendorSearchTerm}
                 onChange={(e) => setVendorSearchTerm(e.target.value)}
                 autoFocus
               />
-              <div className="product-lookup-table-container">
-                <table className="product-lookup-table">
+              <div className="lookup-modal-table-container">
+                <table className="lookup-modal-table">
                   <thead>
                     <tr>
                       <th>Code</th>
                       <th>Name</th>
-                      <th>Address</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -395,11 +569,6 @@ function GRPOadd() {
                         >
                           <td>{vendor.code}</td>
                           <td>{vendor.name}</td>
-                          <td>
-                            {[vendor.address1, vendor.city]
-                              .filter(Boolean)
-                              .join(", ")}
-                          </td>
                         </tr>
                       ))}
                   </tbody>
@@ -411,49 +580,47 @@ function GRPOadd() {
       )}
 
       {isPOModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>Select Purchase Order for {formData.vendorName}</h2>
+        <div className="lookup-modal-overlay">
+          <div className="lookup-modal-content">
+            <div className="lookup-modal-header">
+              <h2>Select Purchase Order</h2>
               <button
-                className="modal-close-btn"
+                className="lookup-modal-close-btn"
                 onClick={() => setIsPOModalOpen(false)}
               >
                 ×
               </button>
             </div>
-            <div className="modal-body">
+            <div className="lookup-modal-body">
               <input
                 type="text"
-                placeholder="Search by PO Number..."
-                className="modal-search-input"
+                placeholder="Search..."
+                className="lookup-modal-search-input"
                 value={poSearchTerm}
                 onChange={(e) => setPoSearchTerm(e.target.value)}
                 autoFocus
               />
-              <div className="product-lookup-table-container">
-                <table className="product-lookup-table">
+              <div className="lookup-modal-table-container">
+                <table className="lookup-modal-table">
                   <thead>
                     <tr>
-                      <th>P.O Number</th>
-                      <th>P.O Date</th>
-                      <th>Total</th>
+                      <th>P.O. Number</th>
+                      <th>P.O. Date</th>
+                      <th>Vendor Ref No</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {allPurchaseOrders
-                      .filter(
-                        (p) =>
-                          p.vendorCode === formData.vendorCode &&
-                          p.purchaseOrderNo
-                            .toLowerCase()
-                            .includes(poSearchTerm.toLowerCase())
+                    {vendorPurchaseOrders
+                      .filter((po) =>
+                        po.purchaseOrderNo
+                          .toLowerCase()
+                          .includes(poSearchTerm.toLowerCase())
                       )
                       .map((po) => (
                         <tr key={po.id} onClick={() => handleSelectPO(po)}>
                           <td>{po.purchaseOrderNo}</td>
                           <td>{new Date(po.poDate).toLocaleDateString()}</td>
-                          <td>{po.orderTotal?.toFixed(2)}</td>
+                          <td>{po.vendorRefNumber}</td>
                         </tr>
                       ))}
                   </tbody>
@@ -465,28 +632,28 @@ function GRPOadd() {
       )}
 
       {isProductModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
+        <div className="lookup-modal-overlay">
+          <div className="lookup-modal-content">
+            <div className="lookup-modal-header">
               <h2>Select Product</h2>
               <button
-                className="modal-close-btn"
+                className="lookup-modal-close-btn"
                 onClick={() => setIsProductModalOpen(false)}
               >
                 ×
               </button>
             </div>
-            <div className="modal-body">
+            <div className="lookup-modal-body">
               <input
                 type="text"
-                placeholder="Search by SKU or Name..."
-                className="modal-search-input"
+                placeholder="Search..."
+                className="lookup-modal-search-input"
                 value={productSearchTerm}
                 onChange={(e) => setProductSearchTerm(e.target.value)}
                 autoFocus
               />
-              <div className="product-lookup-table-container">
-                <table className="product-lookup-table">
+              <div className="lookup-modal-table-container">
+                <table className="lookup-modal-table">
                   <thead>
                     <tr>
                       <th>SKU</th>
@@ -524,28 +691,28 @@ function GRPOadd() {
       )}
 
       {isUOMModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
+        <div className="lookup-modal-overlay">
+          <div className="lookup-modal-content">
+            <div className="lookup-modal-header">
               <h2>Select UOM</h2>
               <button
-                className="modal-close-btn"
+                className="lookup-modal-close-btn"
                 onClick={() => setIsUOMModalOpen(false)}
               >
                 ×
               </button>
             </div>
-            <div className="modal-body">
+            <div className="lookup-modal-body">
               <input
                 type="text"
-                placeholder="Search UOM..."
-                className="modal-search-input"
+                placeholder="Search..."
+                className="lookup-modal-search-input"
                 value={uomSearchTerm}
                 onChange={(e) => setUomSearchTerm(e.target.value)}
                 autoFocus
               />
-              <div className="product-lookup-table-container">
-                <table className="product-lookup-table">
+              <div className="lookup-modal-table-container">
+                <table className="lookup-modal-table">
                   <thead>
                     <tr>
                       <th>UOM Name</th>
@@ -572,28 +739,28 @@ function GRPOadd() {
       )}
 
       {isWarehouseModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
+        <div className="lookup-modal-overlay">
+          <div className="lookup-modal-content">
+            <div className="lookup-modal-header">
               <h2>Select Warehouse</h2>
               <button
-                className="modal-close-btn"
+                className="lookup-modal-close-btn"
                 onClick={() => setIsWarehouseModalOpen(false)}
               >
                 ×
               </button>
             </div>
-            <div className="modal-body">
+            <div className="lookup-modal-body">
               <input
                 type="text"
-                placeholder="Search Warehouse..."
-                className="modal-search-input"
+                placeholder="Search..."
+                className="lookup-modal-search-input"
                 value={warehouseSearchTerm}
                 onChange={(e) => setWarehouseSearchTerm(e.target.value)}
                 autoFocus
               />
-              <div className="product-lookup-table-container">
-                <table className="product-lookup-table">
+              <div className="lookup-modal-table-container">
+                <table className="lookup-modal-table">
                   <thead>
                     <tr>
                       <th>Code</th>
@@ -629,28 +796,28 @@ function GRPOadd() {
       )}
 
       {isTaxModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
+        <div className="lookup-modal-overlay">
+          <div className="lookup-modal-content">
+            <div className="lookup-modal-header">
               <h2>Select Tax Code</h2>
               <button
-                className="modal-close-btn"
+                className="lookup-modal-close-btn"
                 onClick={() => setIsTaxModalOpen(false)}
               >
                 ×
               </button>
             </div>
-            <div className="modal-body">
+            <div className="lookup-modal-body">
               <input
                 type="text"
-                placeholder="Search Tax Code..."
-                className="modal-search-input"
+                placeholder="Search..."
+                className="lookup-modal-search-input"
                 value={taxSearchTerm}
                 onChange={(e) => setTaxSearchTerm(e.target.value)}
                 autoFocus
               />
-              <div className="product-lookup-table-container">
-                <table className="product-lookup-table">
+              <div className="lookup-modal-table-container">
+                <table className="lookup-modal-table">
                   <thead>
                     <tr>
                       <th>Code</th>
@@ -680,75 +847,67 @@ function GRPOadd() {
         </div>
       )}
 
-      <div className="detail-page-container">
-        <div className="detail-page-header-bar">
-          <h1 className="detail-page-main-title">
-            Create Goods Receipt PO (GRPO)
-          </h1>
+      <div className="grpo-add-page-container">
+        <div className="grpo-add-page-header-bar">
+          <h1 className="grpo-add-page-main-title">Create Goods Receipt PO</h1>
         </div>
-
         <div className="grpo-add__form-header">
-          <div className="entry-header-column">
-            <div className="entry-header-field">
+          <div className="grpo-entry-header-column">
+            <div className="grpo-entry-header-field">
               <label htmlFor="vendorCode">Vendor Code:</label>
-              <div className="input-icon-wrapper">
+              <div className="grpo-input-with-icon-wrapper">
                 <input
                   type="text"
                   id="vendorCode"
                   value={formData.vendorCode}
-                  className="form-input-styled"
+                  className="grpo-form-input"
                   readOnly
                   onClick={openVendorModal}
                 />
                 <button
                   type="button"
-                  className="header-lookup-indicator internal"
+                  className="grpo-header-lookup-btn"
                   onClick={openVendorModal}
                 >
                   <LookupIcon />
                 </button>
               </div>
             </div>
-            <div className="entry-header-field">
+            <div className="grpo-entry-header-field">
               <label htmlFor="vendorName">Vendor Name:</label>
-              <div className="input-icon-wrapper">
+              <div className="grpo-input-with-icon-wrapper">
                 <input
                   type="text"
                   id="vendorName"
                   value={formData.vendorName}
-                  className="form-input-styled"
+                  className="grpo-form-input"
                   readOnly
                   onClick={openVendorModal}
                 />
                 <button
                   type="button"
-                  className="header-lookup-indicator internal"
+                  className="grpo-header-lookup-btn"
                   onClick={openVendorModal}
                 >
                   <LookupIcon />
                 </button>
               </div>
             </div>
-            <div className="entry-header-field">
-              <label htmlFor="poNumber">P.O Number:</label>
-              <div className="input-icon-wrapper">
+            <div className="grpo-entry-header-field">
+              <label htmlFor="purchaseOrderNo">Based on P.O. #:</label>
+              <div className="grpo-input-with-icon-wrapper">
                 <input
                   type="text"
-                  id="poNumber"
-                  value={formData.poNumber}
-                  className="form-input-styled"
+                  id="purchaseOrderNo"
+                  value={formData.purchaseOrderNo}
+                  className="grpo-form-input"
                   readOnly
                   onClick={openPOModal}
                   disabled={!formData.vendorCode}
-                  title={
-                    !formData.vendorCode
-                      ? "Select a Vendor first"
-                      : "Select a Purchase Order"
-                  }
                 />
                 <button
                   type="button"
-                  className="header-lookup-indicator internal"
+                  className="grpo-header-lookup-btn"
                   onClick={openPOModal}
                   disabled={!formData.vendorCode}
                 >
@@ -756,140 +915,147 @@ function GRPOadd() {
                 </button>
               </div>
             </div>
-            <div className="entry-header-field">
+            <div className="grpo-entry-header-field">
               <label htmlFor="vendorRefNumber">Vendor Ref No:</label>
               <input
                 type="text"
+                id="vendorRefNumber"
                 name="vendorRefNumber"
                 value={formData.vendorRefNumber}
-                className="form-input-styled"
-                readOnly
+                onChange={handleInputChange}
+                className="grpo-form-input"
               />
             </div>
-            <div className="entry-header-field">
-              <label htmlFor="payToAddress">Pay to Address:</label>
+            <div className="grpo-entry-header-field">
+              <label htmlFor="shipToAddress">Ship to Address:</label>
               <textarea
-                name="billToAddress"
-                value={formData.billToAddress}
-                className="form-textarea-styled"
+                id="shipToAddress"
+                name="shipToAddress"
+                value={formData.shipToAddress}
+                onChange={handleInputChange}
+                className="grpo-form-textarea"
                 rows="2"
-                readOnly
               />
             </div>
-            <div className="entry-header-field">
+            <div className="grpo-entry-header-field">
               <label htmlFor="grpoRemarks">Remarks:</label>
               <textarea
+                id="grpoRemarks"
                 name="grpoRemarks"
                 value={formData.grpoRemarks}
                 onChange={handleInputChange}
-                className="form-textarea-styled"
+                className="grpo-form-textarea"
                 rows="2"
               />
             </div>
           </div>
-          <div className="entry-header-column">
-            <div className="entry-header-field">
-              <label htmlFor="grpoNumber">GRPO Number:</label>
+          <div className="grpo-entry-header-column">
+            <div className="grpo-entry-header-field">
+              <label htmlFor="grpoNo">GRPO Number:</label>
               <input
                 type="text"
-                value={formData.grpoNumber || "Generated on save"}
-                className="form-input-styled"
+                id="grpoNo"
+                value={"Generated on save"}
+                className="grpo-form-input"
                 readOnly
                 disabled
               />
             </div>
-            <div className="entry-header-field">
+            <div className="grpo-entry-header-field">
               <label htmlFor="grpoDate">GRPO Date:</label>
               <input
                 type="date"
+                id="grpoDate"
                 name="grpoDate"
                 value={formData.grpoDate}
                 onChange={handleInputChange}
-                className="form-input-styled"
+                className="grpo-form-input"
               />
             </div>
-            <div className="entry-header-field">
-              <label htmlFor="dueDate">Due Date:</label>
+            <div className="grpo-entry-header-field">
+              <label htmlFor="deliveryDate">Delivery Date:</label>
               <input
                 type="date"
-                name="dueDate"
-                value={formData.dueDate}
+                id="deliveryDate"
+                name="deliveryDate"
+                value={formData.deliveryDate}
                 onChange={handleInputChange}
-                className="form-input-styled"
+                className="grpo-form-input"
               />
             </div>
-            <div className="entry-header-field file-input-container">
+            <div className="grpo-entry-header-field file-input-area">
               <label htmlFor="uploadFilesInput">Attachment(s):</label>
-              <div className="file-input-controls-wrapper">
+              <div className="file-input-controls">
+                <input
+                  type="file"
+                  id="uploadFilesInput"
+                  ref={fileInputRef}
+                  className="grpo-file-input-hidden"
+                  onChange={handleFileInputChange}
+                  multiple
+                />
                 <button
                   type="button"
-                  className="browse-files-btn"
+                  className="grpo-browse-files-btn"
                   onClick={handleBrowseClick}
                 >
-                  Browse files
+                  Browse...
                 </button>
+                {formData.uploadedFiles.length > 0 && (
+                  <div className="grpo-file-list-display">
+                    {formData.uploadedFiles.map((f, i) => (
+                      <div key={f.name + i} className="grpo-file-entry">
+                        <span className="grpo-file-name" title={f.name}>
+                          {f.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(f.name)}
+                          className="grpo-remove-file-btn"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="form-input-file-hidden"
-                onChange={handleFileInputChange}
-                multiple
-              />
-              {formData.uploadedFiles.length > 0 && (
-                <div className="file-names-list-area">
-                  {formData.uploadedFiles.map((f, i) => (
-                    <div key={i} className="file-name-entry">
-                      <span title={f.name}>{f.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFile(f.name)}
-                        className="remove-file-btn"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>
-
-        <div className="detail-form-content-area">
-          <div className="grpo-add__items-section">
-            <div className="product-details-header">
-              <h3 className="form-section-title">Received Items Details</h3>
-              <button
-                type="button"
-                className="add-item-row-btn"
-                onClick={handleAddItemRow}
-              >
-                + Add Row
-              </button>
-            </div>
-
-            <div className="table-responsive-container">
-              <table className="grpo-add__items-table">
-                <thead>
-                  <tr>
-                    <th>Product Code</th>
-                    <th>Product Name</th>
-                    <th>Received Quantity</th>
-                    <th>UOM</th>
-                    <th>Price</th>
-                    <th>Warehouse</th>
-                    <th>Tax Code</th>
-                    <th>Tax Price</th>
-                    <th>Total</th>
-                    <th className="action-column-header">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {grpoItems.map((item) => (
+        <div className="grpo-add-content-area">
+          <div className="grpo-items-header">
+            <h3 className="grpo-section-title">Product Details</h3>
+            <button
+              type="button"
+              className="grpo-add-item-row-btn"
+              onClick={handleAddItemRow}
+            >
+              + Add Row
+            </button>
+          </div>
+          <div className="grpo-table-responsive-container">
+            <table className="grpo-add__items-table">
+              <thead>
+                <tr>
+                  <th>Product Code</th>
+                  <th>Product Name</th>
+                  <th>Quantity</th>
+                  <th>UOM</th>
+                  <th>Price</th>
+                  <th>Warehouse</th>
+                  <th>Tax Code</th>
+                  <th>Tax Price</th>
+                  <th>Total</th>
+                  <th className="action-col-header">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {grpoItems.length > 0 ? (
+                  grpoItems.map((item) => (
                     <tr key={item.id}>
                       <td className="editable-cell">
-                        <div className="input-icon-wrapper">
+                        <div className="grpo-table-input-wrapper">
                           <input
                             type="text"
                             value={item.productCode}
@@ -899,25 +1065,7 @@ function GRPOadd() {
                           />
                           <button
                             type="button"
-                            className="grpo-add__lookup-indicator"
-                            onClick={() => openProductModal(item.id)}
-                          >
-                            <LookupIcon />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="editable-cell">
-                        <div className="input-icon-wrapper">
-                          <input
-                            type="text"
-                            value={item.productName}
-                            className="grpo-add__table-input"
-                            readOnly
-                            onClick={() => openProductModal(item.id)}
-                          />
-                          <button
-                            type="button"
-                            className="grpo-add__lookup-indicator"
+                            className="grpo-table-lookup-btn"
                             onClick={() => openProductModal(item.id)}
                           >
                             <LookupIcon />
@@ -926,27 +1074,36 @@ function GRPOadd() {
                       </td>
                       <td className="editable-cell">
                         <input
+                          type="text"
+                          value={item.productName}
+                          className="grpo-add__table-input"
+                          readOnly
+                          onClick={() => openProductModal(item.id)}
+                        />
+                      </td>
+                      <td className="editable-cell">
+                        <input
                           type="number"
                           value={item.quantity}
                           onChange={(e) =>
                             handleItemChange(e, item.id, "quantity")
                           }
-                          className="grpo-add__table-input"
+                          className="grpo-add__table-input align-right"
                         />
                       </td>
                       <td className="editable-cell">
-                        <div className="input-icon-wrapper">
+                        <div className="grpo-table-input-wrapper">
                           <input
                             type="text"
                             value={item.uom}
+                            className="grpo-add__table-input align-center"
                             onChange={(e) =>
                               handleItemChange(e, item.id, "uom")
                             }
-                            className="grpo-add__table-input"
                           />
                           <button
                             type="button"
-                            className="grpo-add__lookup-indicator"
+                            className="grpo-table-lookup-btn"
                             onClick={() => openUOMModal(item.id)}
                           >
                             <LookupIcon />
@@ -957,22 +1114,26 @@ function GRPOadd() {
                         <input
                           type="number"
                           value={item.price}
-                          className="grpo-add__table-input"
-                          readOnly
+                          onChange={(e) =>
+                            handleItemChange(e, item.id, "price")
+                          }
+                          className="grpo-add__table-input align-right"
                         />
                       </td>
                       <td className="editable-cell">
-                        <div className="input-icon-wrapper">
+                        <div className="grpo-table-input-wrapper">
                           <input
                             type="text"
-                            value={item.warehouse}
+                            value={item.warehouseLocation}
                             className="grpo-add__table-input"
-                            readOnly
                             onClick={() => openWarehouseModal(item.id)}
+                            onChange={(e) =>
+                              handleItemChange(e, item.id, "warehouseLocation")
+                            }
                           />
                           <button
                             type="button"
-                            className="grpo-add__lookup-indicator"
+                            className="grpo-table-lookup-btn"
                             onClick={() => openWarehouseModal(item.id)}
                           >
                             <LookupIcon />
@@ -980,89 +1141,96 @@ function GRPOadd() {
                         </div>
                       </td>
                       <td className="editable-cell">
-                        <div className="input-icon-wrapper">
+                        <div className="grpo-table-input-wrapper">
                           <input
                             type="text"
                             value={item.taxCode}
                             className="grpo-add__table-input"
-                            readOnly
                             onClick={() => openTaxModal(item.id)}
+                            onChange={(e) =>
+                              handleItemChange(e, item.id, "taxCode")
+                            }
                           />
                           <button
                             type="button"
-                            className="grpo-add__lookup-indicator"
+                            className="grpo-table-lookup-btn"
                             onClick={() => openTaxModal(item.id)}
                           >
                             <LookupIcon />
                           </button>
                         </div>
                       </td>
-                      <td className="editable-cell">
+                      <td className="readonly-cell">
                         <input
                           type="number"
                           value={item.taxPrice}
+                          className="grpo-add__table-input align-right"
                           readOnly
-                          className="grpo-add__table-input"
                         />
                       </td>
-                      <td className="total-cell">{item.total}</td>
+                      <td className="readonly-cell total-cell">{item.total}</td>
                       <td className="action-cell">
                         <button
                           type="button"
-                          className="remove-item-btn"
+                          className="grpo-remove-item-btn"
                           onClick={() => handleRemoveItem(item.id)}
                         >
                           <DeleteIcon />
                         </button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="10" className="no-items-row">
+                      Click '+ Add Row' to begin or select a Purchase Order to
+                      populate items.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="grpo-summary-container">
+            <div className="grpo-summary-item">
+              <label>Product Total (ex. Tax):</label>
+              <input
+                type="text"
+                readOnly
+                value={productTotalSummary}
+                className="grpo-summary-input"
+              />
             </div>
-
-            <div className="tax-summary-container">
-              <div className="summary-item">
-                <label className="summary-label">Product Total w/o Tax:</label>
-                <input
-                  type="text"
-                  readOnly
-                  value={productTotalSummary}
-                  className="summary-input"
-                />
-              </div>
-              <div className="summary-item">
-                <label className="summary-label">Tax Total:</label>
-                <input
-                  type="text"
-                  readOnly
-                  value={taxTotalSummary}
-                  className="summary-input"
-                />
-              </div>
-              <div className="summary-item">
-                <label className="summary-label">Net Total:</label>
-                <input
-                  type="text"
-                  readOnly
-                  value={grandTotalSummary}
-                  className="summary-input"
-                />
-              </div>
+            <div className="grpo-summary-item">
+              <label>Tax Total:</label>
+              <input
+                type="text"
+                readOnly
+                value={taxTotalSummary}
+                className="grpo-summary-input"
+              />
+            </div>
+            <div className="grpo-summary-item">
+              <label>Net Total:</label>
+              <input
+                type="text"
+                readOnly
+                value={grandTotalSummary}
+                className="grpo-summary-input"
+              />
             </div>
           </div>
         </div>
-
-        <div className="detail-page-footer">
+        <div className="grpo-add-page-footer">
           <button
-            className="footer-btn primary"
+            className="grpo-footer-btn primary"
             onClick={handleSave}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Saving..." : "Create GRPO"}
+            {isSubmitting ? "Saving..." : "Add GRPO"}
           </button>
           <button
-            className="footer-btn secondary"
+            className="grpo-footer-btn secondary"
             onClick={() => navigate("/grpo")}
             disabled={isSubmitting}
           >
@@ -1073,4 +1241,4 @@ function GRPOadd() {
     </>
   );
 }
-export default GRPOadd;
+export default GRPOAdd;

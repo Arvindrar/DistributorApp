@@ -58,6 +58,7 @@ import SalesEmployeeUpdate from "./pages/SalesEmployeeUpdate";
 import ARInvoice from "./pages/ARInvoice";
 import ARInvoiceAdd from "./pages/ARInvoiceAdd";
 import PurchaseUpdate from "./pages/PurchaseUpdate";
+import GRPOupdate from "./pages/GRPOupdate";
 
 function Home() {
   const location = useLocation();
@@ -240,6 +241,7 @@ function Home() {
           />
           <Route path="/grpo" element={<GRPO />} />
           <Route path="/grpo/add" element={<GRPOadd />} />
+          <Route path="/grpo/update/:grpoId" element={<GRPOupdate />} />
           <Route path="/apcreditnote" element={<APCreditNote />} />
           <Route path="/outgoingpayment" element={<OutgoingPayment />} />
           {/* Sales Routes */}

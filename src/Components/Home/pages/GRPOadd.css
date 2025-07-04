@@ -1,62 +1,60 @@
-/* src/pages/Purchase/GRPOadd.css */
+/* src/pages/GRPO/GRPOAdd.css */
 
 /* --- Global Page Layout --- */
-.detail-page-container {
+.grpo-add-page-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f0f2f5;
+  background-color: #f4f6f8;
 }
-.detail-page-header-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.grpo-add-page-header-bar {
   padding: 12px 24px;
   background-color: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #dee2e6;
   flex-shrink: 0;
 }
-.detail-page-main-title {
-  font-size: 1.5rem;
+.grpo-add-page-main-title {
+  font-size: 1.6rem;
   font-weight: 600;
-  color: #333333;
+  color: #212529;
   margin: 0;
 }
 
-/* --- GRPO Add Form Header Styles (Mirrors sales-order-add__) --- */
+/* --- GRPO Add Form Header --- */
 .grpo-add__form-header {
   display: flex;
-  justify-content: space-between;
-  padding: 20px 24px;
+  padding: 24px;
   background-color: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
-  gap: 24px;
-  flex-shrink: 0;
+  border-bottom: 1px solid #dee2e6;
+  gap: 40px;
+  flex-wrap: wrap;
 }
-.grpo-add__form-header .entry-header-column {
+.grpo-entry-header-column {
   display: flex;
   flex-direction: column;
   gap: 12px;
   flex: 1;
+  min-width: 350px;
 }
-.grpo-add__form-header .entry-header-field {
-  display: flex;
+.grpo-entry-header-field {
+  display: grid;
+  grid-template-columns: 120px 1fr;
   align-items: center;
   gap: 10px;
 }
-.grpo-add__form-header .entry-header-field label {
-  font-size: 0.875rem;
-  color: #555555;
-  font-weight: normal;
-  margin-bottom: 0;
-  flex-shrink: 0;
-  min-width: 120px;
+.grpo-entry-header-field label {
+  font-size: 13px;
+  color: #495057;
+  font-weight: 500;
   text-align: left;
+}
+.grpo-entry-header-field.file-input-area {
+  align-items: flex-start;
 }
 
 /* --- Base Input Styling --- */
-.form-input-styled,
-.form-textarea-styled {
+.grpo-form-input,
+.grpo-form-textarea {
   padding: 4px 10px;
   font-size: 13px;
   line-height: 1.5;
@@ -67,80 +65,86 @@
   transition: all 0.15s ease-in-out;
   height: 27px;
   box-sizing: border-box;
+  width: 100%;
+  max-width: 400px;
 }
-.form-textarea-styled {
+.grpo-form-textarea {
   height: auto;
-  min-height: calc(27px * 2);
+  min-height: calc(27px * 2 + 8px); /* 2 rows + padding */
   resize: vertical;
 }
-.form-input-styled:focus,
-.form-textarea-styled:focus {
-  color: #000;
-  background-color: #fff;
-  border-color: #333;
+.grpo-form-input:focus,
+.grpo-form-textarea:focus {
+  border-color: #80bdff;
   outline: 0;
-  box-shadow: 0 0 0 0.1rem rgba(0, 123, 255, 0.25);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
-.form-input-styled[readOnly] {
-  background-color: #f8f9fa;
+.grpo-form-input[readOnly] {
+  background-color: #e9ecef;
   cursor: pointer;
 }
-.form-input-styled[disabled] {
+.grpo-form-input[disabled] {
   background-color: #e9ecef;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
-/* --- Wrapper & Icon Styles --- */
-.input-icon-wrapper {
+/* --- Wrapper & Icon for Header Inputs (Corrected) --- */
+.grpo-input-with-icon-wrapper {
   position: relative;
   display: flex;
-  flex-grow: 1;
+  width: 100%;
   max-width: 400px;
-  align-items: center;
 }
-.header-lookup-indicator {
-  background-color: white;
-  border: 1px solid #ccc;
+.grpo-input-with-icon-wrapper .grpo-form-input {
+  width: 100%;
+}
+.grpo-header-lookup-btn {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  background-color: #fff;
+  border: 1px solid #ced4da;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  padding: 0;
+  transition: all 0.2s ease;
 }
-.header-lookup-indicator.internal {
-  position: absolute;
-  top: 50%;
-  right: 5px;
-  transform: translateY(-50%);
-  z-index: 2;
-}
-.lookup-indicator-icon {
-  font-size: 10px;
-  color: #555;
-}
-.header-lookup-indicator:hover {
+.grpo-header-lookup-btn:hover {
   border-color: #007bff;
 }
-.header-lookup-indicator:hover .lookup-indicator-icon {
+.grpo-header-lookup-btn[disabled] {
+  display: none;
+}
+.grpo-lookup-indicator-icon {
+  font-size: 10px;
+  font-weight: bold;
+  color: #6c757d;
+  transition: color 0.2s ease;
+}
+.grpo-header-lookup-btn:hover .grpo-lookup-indicator-icon {
   color: #007bff;
 }
 
-/* --- File Input Styles --- */
-.file-input-container {
-  align-items: flex-start;
-}
-.file-input-controls-wrapper {
+/* --- File Input Styling --- */
+.file-input-controls {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
+  width: 100%;
 }
-.form-input-file-hidden {
+.grpo-file-input-hidden {
   display: none;
 }
-.browse-files-btn {
-  padding: 4px 12px;
+.grpo-browse-files-btn {
+  padding: 2px 12px;
   font-size: 13px;
   color: #333;
   background-color: #f8f9fa;
@@ -149,147 +153,161 @@
   cursor: pointer;
   height: 27px;
   line-height: 1.5;
-  flex-shrink: 0;
-  white-space: nowrap;
+  width: auto;
 }
-.file-names-list-area {
-  margin-top: 5px;
+.grpo-browse-files-btn:hover {
+  background-color: #e2e6ea;
+}
+.grpo-file-list-display {
   font-size: 0.8rem;
-  max-height: 80px;
+  max-height: 90px;
   overflow-y: auto;
   width: 100%;
-  max-width: 400px;
-  padding: 5px;
+  max-width: 350px;
+  padding: 4px;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
+  background-color: #fdfdfd;
 }
-.file-name-entry {
+.grpo-file-entry {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 3px 5px;
+  padding: 4px 6px;
   border-bottom: 1px solid #f0f0f0;
 }
-.remove-file-btn {
+.grpo-file-entry:last-child {
+  border-bottom: none;
+}
+.grpo-file-name {
+  font-size: 13px;
+  color: #495057;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+.grpo-remove-file-btn {
   background: none;
   border: none;
   color: #dc3545;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  font-weight: bold;
   padding: 0 5px;
   line-height: 1;
 }
 
-/* --- Main Content & Items Table --- */
-.detail-form-content-area {
+/* --- Main Content Area & Items Table --- */
+.grpo-add-content-area {
   flex-grow: 1;
-  padding: 20px 24px;
+  padding: 24px;
   background-color: #ffffff;
-  padding-left: 50px;
 }
-.form-section-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #333333;
-}
-.grpo-add__items-section {
-  width: 100%;
-}
-.product-details-header {
+.grpo-items-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
-.add-item-row-btn {
-  padding: 6px 12px;
+.grpo-section-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #343a40;
+  margin: 0;
+}
+.grpo-add-item-row-btn {
+  padding: 6px 14px;
   font-size: 0.875rem;
   background-color: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
-.add-item-row-btn:hover {
+.grpo-add-item-row-btn:hover {
   background-color: #0056b3;
 }
-.table-responsive-container {
+.grpo-table-responsive-container {
   width: 100%;
   overflow-x: auto;
-  margin-bottom: 20px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
 }
 .grpo-add__items-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 13px;
+}
+.no-items-row {
+  text-align: center;
+  padding: 20px;
+  color: #6c757d;
+  font-style: italic;
+  background-color: #f8f9fa;
 }
 .grpo-add__items-table th,
 .grpo-add__items-table td {
-  border: 1px solid #e0e0e0;
-  padding: 2px;
+  border-bottom: 1px solid #dee2e6;
   text-align: left;
   vertical-align: middle;
 }
 .grpo-add__items-table th {
   background-color: #f8f9fa;
   font-weight: 600;
-  padding: 8px 6px;
+  color: #495057;
+  padding: 10px 8px;
 }
-.grpo-add__items-table .editable-cell {
+.grpo-add__items-table td {
+  border-right: 1px solid #e9ecef;
+}
+.grpo-add__items-table td:last-child {
+  border-right: none;
+}
+.grpo-add__items-table .readonly-cell {
+  padding: 0;
+  background-color: #f8f9fa;
+}
+.grpo-add__items-table .total-cell {
+  font-weight: 600;
+  color: #000;
+  text-align: right;
+  padding-right: 22px;
+  padding-left: 22px;
+}
+.grpo-add__items-table td.editable-cell {
+  padding: 0;
   position: relative;
 }
 .grpo-add__table-input {
   width: 100%;
-  height: 100%;
-  padding: 6px;
+  height: 38px;
+  padding: 6px 7px;
   border: none;
   background-color: transparent;
+  font-size: 13px;
+  box-sizing: border-box;
   outline: none;
 }
 .grpo-add__table-input:focus {
   background-color: #eef6ff;
 }
-
-/* Items Table - Direct copy from SalesAdd with prefix change */
-.grpo-add__items-section .grpo-add__items-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
+.grpo-add__table-input[readOnly] {
+  cursor: pointer;
 }
-.grpo-add__items-section .grpo-add__items-table th,
-.grpo-add__items-section .grpo-add__items-table td {
-  border: 1px solid #e0e0e0;
-  padding: 2px;
-  text-align: left;
-  vertical-align: middle;
+.grpo-add__table-input.align-right {
+  text-align: right;
+  padding-right: 12px;
 }
-.grpo-add__items-section .grpo-add__items-table th {
-  background-color: #f8f9fa;
-  font-weight: 600;
-  color: #333;
-  padding: 8px 6px;
+.grpo-add__table-input.align-center {
+  text-align: center;
 }
-.
+.grpo-table-input-wrapper {
+  position: relative;
+  height: 100%;
 }
-.grpo-add__items-section .grpo-add__quantity-input,
-.grpo-add__items-section .grpo-add__price-input,
-.grpo-add__items-section .grpo-add__tax-input {
-  text-align: left;
-}
-.grpo-add__items-section .grpo-add__uom-input {
-  max-width: 100px;
-  text-align: left;
-}
-.grpo-add__items-section .grpo-add__quantity-input {
-  max-width: 80px;
-}
-.grpo-add__items-section .grpo-add__price-input {
-  max-width: 100px;
-}
-.grpo-add__items-section .grpo-add__tax-input {
-  max-width: 140px;
-}
-.grpo-add__items-section .grpo-add__lookup-indicator {
+.grpo-table-lookup-btn {
   position: absolute;
   top: 50%;
   right: 5px;
@@ -303,102 +321,118 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 10px;
-  color: #555;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   padding: 0;
   line-height: 1;
-  z-index: 10;
 }
-.grpo-add__items-section .grpo-add__lookup-indicator:hover {
+.grpo-table-lookup-btn:hover {
   border-color: #007bff;
+}
+.grpo-table-lookup-btn .grpo-lookup-indicator-icon {
+  font-size: 10px;
+  color: #555;
+}
+.grpo-table-lookup-btn:hover .grpo-lookup-indicator-icon {
   color: #007bff;
 }
-.grpo-add__items-table .action-column-header,
-.grpo-add__items-table .action-cell {
+.action-cell {
   width: 60px;
   text-align: center;
+  padding: 2px;
 }
-.remove-item-btn {
+.grpo-remove-item-btn {
   background: none;
   border: none;
-  color: #dc3545;
   cursor: pointer;
-  padding: 4px;
-  display: inline-flex;
+  padding: 5px;
+  color: #dc3545;
+}
+.grpo-remove-item-btn:hover {
+  color: #dc3545;
 }
 
 /* --- Summary & Footer --- */
-.tax-summary-container {
+.grpo-summary-container {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-top: 15px;
+  gap: 25px;
+  flex-direction: row;
+  margin-top: 20px;
   padding-right: 10px;
   width: 100%;
 }
-.summary-item {
+.grpo-summary-item {
   display: flex;
   align-items: center;
-  margin-left: 25px;
+  gap: 8px;
 }
-.summary-label {
-  margin-right: 8px;
-  font-weight: 500;
+.grpo-summary-item label {
+  font-weight: 600;
   white-space: nowrap;
   font-size: 0.9em;
+  color: #495057;
 }
-.summary-input {
+.grpo-summary-input {
   width: 120px;
   padding: 6px 10px;
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 0.9em;
+  font-weight: 500;
   text-align: right;
   background-color: #e9ecef;
 }
-.detail-page-footer {
+.grpo-add-page-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 24px;
+  padding: 12px 24px;
   border-top: 1px solid #d9d9d9;
   background-color: #f8f9fa;
   position: sticky;
   bottom: 0;
+  z-index: 100;
 }
-.footer-actions-main {
-  display: flex;
-  gap: 10px;
-}
-.footer-btn {
-  padding: 7px 15px;
-  font-size: 0.875rem;
+.grpo-footer-btn {
+  padding: 7px 18px;
+  font-size: 0.9rem;
   font-weight: 500;
   border-radius: 4px;
   cursor: pointer;
   border: 1px solid;
+  transition: all 0.2s ease;
 }
-.footer-btn.primary {
+.grpo-footer-btn.primary {
   background-color: #007bff;
   color: white;
   border-color: #007bff;
 }
-.footer-btn.secondary {
+.grpo-footer-btn.primary:hover {
+  background-color: #0069d9;
+}
+.grpo-footer-btn.secondary {
   background-color: #dc3545;
   color: white;
   border-color: #dc3545;
 }
+.grpo-footer-btn.secondary:hover {
+  background-color: #c82333;
+  border-color: #c82333;
+}
+.grpo-footer-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
 
 /* --- Modals --- */
 .grpo-add-modal-overlay,
-.modal-overlay {
+.lookup-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -415,7 +449,7 @@
   text-align: center;
 }
 .grpo-add-modal-content.success {
-  border-top: 5px solid #007bff;
+  border-top: 5px solid #28a745;
 }
 .grpo-add-modal-content.error {
   border-top: 5px solid #dc3545;
@@ -434,14 +468,12 @@
   color: white;
 }
 .grpo-add-modal-content.success .grpo-add-modal-close-button {
-  background-color: #007bff;
+  background-color: #28a745;
 }
 .grpo-add-modal-content.error .grpo-add-modal-close-button {
   background-color: #dc3545;
 }
-
-/* Lookup Modals */
-.modal-content {
+.lookup-modal-content {
   background-color: #fff;
   padding: 0;
   border-radius: 8px;
@@ -452,57 +484,58 @@
   flex-direction: column;
   max-height: 80vh;
 }
-.modal-header {
+.lookup-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
   border-bottom: 1px solid #e9ecef;
 }
-.modal-header h2 {
+.lookup-modal-header h2 {
   margin: 0;
   font-size: 1.25rem;
 }
-.modal-close-btn {
+.lookup-modal-close-btn {
   background: none;
   border: none;
   font-size: 1.75rem;
   cursor: pointer;
   color: #888;
 }
-.modal-body {
+.lookup-modal-body {
   padding: 20px;
   overflow-y: auto;
   flex-grow: 1;
 }
-.modal-search-input {
+.lookup-modal-search-input {
   width: 100%;
   padding: 8px 12px;
   margin-bottom: 15px;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
-.product-lookup-table-container {
+.lookup-modal-table-container {
   max-height: calc(80vh - 180px);
   overflow-y: auto;
   border: 1px solid #dee2e6;
 }
-.product-lookup-table {
+.lookup-modal-table {
   width: 100%;
   border-collapse: collapse;
 }
-.product-lookup-table th,
-.product-lookup-table td {
+.lookup-modal-table th,
+.lookup-modal-table td {
   border-bottom: 1px solid #dee2e6;
   padding: 8px 10px;
   text-align: left;
 }
-.product-lookup-table th {
+.lookup-modal-table th {
   background-color: #f8f9fa;
   position: sticky;
   top: 0;
+  z-index: 1;
 }
-.product-lookup-table tbody tr:hover {
+.lookup-modal-table tbody tr:hover {
   background-color: #f1f1f1;
   cursor: pointer;
 }
@@ -510,65 +543,4 @@
   text-align: center;
   padding: 20px;
   color: #777;
-}
-
-/* --- Error Styles --- */
-.form-input-styled.input-error,
-.grpo-add__table-input.input-error {
-  border-color: #dc3545 !important;
-}
-
-/* --- Responsive Adjustments --- */
-@media (max-width: 992px) {
-  .grpo-add__form-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 15px;
-  }
-}
-@media (max-width: 768px) {
-  .detail-page-header-bar,
-  .grpo-add__form-header,
-  .detail-form-content-area,
-  .detail-page-footer {
-    padding-left: 15px;
-    padding-right: 15px;
-  }
-  .entry-header-field {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .entry-header-field label {
-    min-width: auto;
-    margin-bottom: 5px;
-  }
-  .input-icon-wrapper {
-    width: 100%;
-    max-width: none;
-  }
-  .file-input-container {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .browse-files-btn {
-    margin-bottom: 5px;
-  }
-  .file-names-display-area {
-    max-width: 100%;
-  }
-  .product-details-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  .tax-summary-container {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
-  }
-  .summary-item {
-    margin-left: 0;
-    width: 100%;
-    justify-content: flex-end;
-  }
 }
