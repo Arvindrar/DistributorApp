@@ -59,6 +59,7 @@ import ARInvoice from "./pages/ARInvoice";
 import ARInvoiceAdd from "./pages/ARInvoiceAdd";
 import PurchaseUpdate from "./pages/PurchaseUpdate";
 import GRPOupdate from "./pages/GRPOupdate";
+import ARInvoiceUpdate from "./pages/ARInvoiceUpdate";
 
 function Home() {
   const location = useLocation();
@@ -251,6 +252,10 @@ function Home() {
           {/* This is the new route */}
           <Route path="/arinvoice" element={<ARInvoice />} />
           <Route path="/arinvoice/add" element={<ARInvoiceAdd />} />
+          <Route
+            path="/arinvoice/update/:invoiceId"
+            element={<ARInvoiceUpdate />}
+          />
           <Route path="/arcreditnote" element={<ARCreditNote />} />
           <Route path="/incomingpayment" element={<IncomingPayment />} />
           {/* Other Main Routes */}

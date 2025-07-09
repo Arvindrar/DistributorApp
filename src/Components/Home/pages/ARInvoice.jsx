@@ -33,7 +33,7 @@ function ARInvoice() {
         const queryParams = new URLSearchParams();
         if (currentInvoiceSearch) {
           // ASSUMPTION: Your API uses 'invoiceNo' for searching
-          queryParams.append("invoiceNo", currentInvoiceSearch);
+          queryParams.append("arInvoiceNo", currentInvoiceSearch);
         }
         if (currentCustSearch) {
           queryParams.append("customerName", currentCustSearch);
@@ -126,7 +126,7 @@ function ARInvoice() {
 
   const handleArInvoiceNumberLinkClick = (e, invoiceId) => {
     e.preventDefault();
-    navigate(`/arinvoice/view/${invoiceId}`);
+    navigate(`/arinvoice/update/${invoiceId}`);
   };
 
   let tableBodyContent;
@@ -167,7 +167,7 @@ function ARInvoice() {
             className="ari-overview__table-data-link"
             title={`View details for Invoice No. ${invoice.invoiceNo}`}
           >
-            {invoice.invoiceNo || "N/A"}
+            {invoice.arInvoiceNo || "N/A"}
           </a>
         </td>
         <td>
@@ -178,7 +178,7 @@ function ARInvoice() {
         <td>{invoice.customerCode || "N/A"}</td>
         <td>{invoice.customerName || "N/A"}</td>
         <td>{formatCurrency(invoice.invoiceTotal)}</td>
-        <td>{invoice.remarks || "N/A"}</td>
+        <td>{invoice.invoiceRemarks || "N/A"}</td>
       </tr>
     ));
   }
