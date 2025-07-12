@@ -60,6 +60,7 @@ import ARInvoiceAdd from "./pages/ARInvoiceAdd";
 import PurchaseUpdate from "./pages/PurchaseUpdate";
 import GRPOupdate from "./pages/GRPOupdate";
 import ARInvoiceUpdate from "./pages/ARInvoiceUpdate";
+import APCreditNoteAdd from "./pages/APCreditNoteAdd";
 
 function Home() {
   const location = useLocation();
@@ -191,9 +192,9 @@ function Home() {
       <main className="main-content">
         <Routes>
           {/* Dashboard Route (Root) */}
-          <Route path="/" element={<Dashboard />} />{" "}
+          <Route path="/" element={<Dashboard />} />
           {/* Ensure this is the first specific route */}
-          <Route path="/dashboard" element={<Navigate replace to="/" />} />{" "}
+          <Route path="/dashboard" element={<Navigate replace to="/" />} />
           {/* Optional: redirect /dashboard to / */}
           {/* Customer Routes */}
           <Route path="/vendor" element={<Vendors />} />
@@ -244,6 +245,7 @@ function Home() {
           <Route path="/grpo/add" element={<GRPOadd />} />
           <Route path="/grpo/update/:grpoId" element={<GRPOupdate />} />
           <Route path="/apcreditnote" element={<APCreditNote />} />
+          <Route path="/apcreditnote/add" element={<APCreditNoteAdd />} />
           <Route path="/outgoingpayment" element={<OutgoingPayment />} />
           {/* Sales Routes */}
           <Route path="/salesorder" element={<Sales />} />

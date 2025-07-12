@@ -220,7 +220,7 @@ const ProductItemsTable = ({
           <input
             type="text"
             readOnly
-            value={summary.grandTotal}
+            value={summary.netTotal}
             className="summary-input"
           />
         </div>

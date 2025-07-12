@@ -84,6 +84,7 @@ function PurchaseAdd() {
           data.filter ? data.filter((v) => v.isActive !== false) : data
         );
       } catch (error) {
+        // <<<--- THIS IS THE CORRECTED LINE
         showAppModal(`Error loading Vendors: ${error.message}`, "error");
       }
     };
@@ -199,33 +200,50 @@ function PurchaseAdd() {
 
   const handleSave = async () => {
     const validationErrors = validateForm();
+
+    // Check if the validationErrors object has any keys
     if (Object.keys(validationErrors).length > 0) {
-      showAppModal("Please correct the validation errors.", "error");
-      return;
+      // 1. Get an array of all the error message strings.
+      const errorMessages = Object.values(validationErrors);
+
+      // 2. Format the array into a single string with each error on a new line.
+      // The "white-space: pre-line" style in your MessageModal will respect the '\n'.
+      const formattedErrorMessage =
+        "Please fix the following issues:\n\n" + errorMessages.join("\n");
+
+      // 3. Show this detailed list in the modal.
+      showAppModal(formattedErrorMessage, "error");
+      return; // Stop the function from proceeding to save
     }
 
     setIsSubmitting(true);
-    const payload = new FormData();
-    payload.append("VendorCode", formData.vendorCode);
-    payload.append("VendorName", formData.vendorName);
-    payload.append("PODate", formData.poDate);
-    payload.append("DeliveryDate", formData.deliveryDate);
-    payload.append("VendorRefNumber", formData.vendorRefNumber);
-    payload.append("ShipToAddress", formData.shipToAddress);
-    payload.append("PurchaseRemarks", formData.purchaseRemarks);
 
-    const itemsPayload = purchaseItems.map((item) => ({
-      ProductCode: item.productCode,
-      ProductName: item.productName,
-      Quantity: parseFloat(item.quantity) || 0,
-      UOM: item.uom,
-      Price: parseFloat(item.price) || 0,
-      WarehouseLocation: item.warehouseLocation,
-      TaxCode: item.taxCode,
-      TaxPrice: parseFloat(item.taxPrice) || 0,
-      Total: parseFloat(item.total) || 0,
+    const postingPurchaseOrderDetails = purchaseItems.map((item, index) => ({
+      sINo: index + 1,
+      productCode: item.productCode,
+      productName: item.productName,
+      qty: parseFloat(item.quantity) || 0,
+      uomCode: item.uom,
+      price: parseFloat(item.price) || 0,
+      locationCode: item.warehouseLocation,
+      taxCode: item.taxCode,
+      totalTax: parseFloat(item.taxPrice) || 0,
+      netTotal: parseFloat(item.total) || 0,
     }));
-    payload.append("PurchaseItemsJson", JSON.stringify(itemsPayload));
+
+    const mainPayload = {
+      poNumber: formData.vendorRefNumber,
+      vendorCode: formData.vendorCode,
+      vendorName: formData.vendorName,
+      poDate: formData.poDate,
+      deliveryDate: formData.deliveryDate,
+      address: formData.shipToAddress,
+      remark: formData.purchaseRemarks,
+      PostingPurchaseOrderDetails: postingPurchaseOrderDetails,
+    };
+
+    const payload = new FormData();
+    payload.append("purchaseOrderData", JSON.stringify(mainPayload));
 
     formData.uploadedFiles.forEach((file) => {
       payload.append("UploadedFiles", file, file.name);
@@ -236,11 +254,13 @@ function PurchaseAdd() {
         method: "POST",
         body: payload,
       });
+
       const responseData = await response.json();
-      if (!response.ok)
+      if (!response.ok) {
         throw new Error(
           responseData.message || "Failed to create purchase order."
         );
+      }
       showAppModal(responseData.message, "success");
     } catch (error) {
       console.error("Error saving purchase order:", error);
@@ -328,7 +348,6 @@ function PurchaseAdd() {
           <h1 className="detail-page-main-title">Create Purchase Order</h1>
         </div>
 
-        {/* --- THIS IS THE RESTORED HEADER FORM SECTION --- */}
         <div className="purchase-order-add__form-header">
           <div className="entry-header-column">
             <div className="entry-header-field">

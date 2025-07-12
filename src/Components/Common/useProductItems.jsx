@@ -219,13 +219,13 @@ export const useProductItems = (initialItems = []) => {
     (acc, item) => {
       const total = parseFloat(item.total) || 0;
       const taxPrice = parseFloat(item.taxPrice) || 0;
-      acc.grandTotal += total;
+      acc.netTotal += total;
       acc.taxTotal += taxPrice;
       return acc;
     },
-    { grandTotal: 0, taxTotal: 0 }
+    { netTotal: 0, taxTotal: 0 }
   );
-  summary.productTotal = summary.grandTotal - summary.taxTotal;
+  summary.productTotal = summary.netTotal - summary.taxTotal;
 
   // --- THIS IS THE CORRECTED SECTION ---
   const renderModals = () => (
@@ -396,7 +396,7 @@ export const useProductItems = (initialItems = []) => {
     openWarehouseModal,
     openTaxModal,
     summary: {
-      grandTotal: summary.grandTotal.toFixed(2),
+      netTotal: summary.netTotal.toFixed(2),
       taxTotal: summary.taxTotal.toFixed(2),
       productTotal: summary.productTotal.toFixed(2),
     },

@@ -195,3 +195,70 @@
   text-decoration: underline;
   color: #0056b3;
 }
+
+/* Add these styles to your existing Purchase.css file */
+
+.po-overview__actions-header,
+.po-overview__actions-cell {
+  text-align: center;
+  width: 80px; /* Gives the column a consistent width */
+}
+
+.po-overview__delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 8px;
+  color: #dc3545; /* A standard red color for delete actions */
+  border-radius: 4px;
+  line-height: 1;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.po-overview__delete-btn:hover,
+.po-overview__delete-btn:focus {
+  color: #fff;
+  background-color: #c82333;
+  outline: none;
+}
+
+.po-overview__modal-actions {
+  display: flex;
+  justify-content: flex-end; /* Align buttons to the right */
+  gap: 15px; /* Space between buttons */
+  margin-top: 25px;
+}
+
+.po-overview__modal-btn {
+  padding: 8px 18px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Cancel Button Style */
+.po-overview__modal-btn.cancel {
+  background-color: #6c757d; /* A standard grey color */
+  color: white;
+  border-color: #6c757d;
+}
+
+.po-overview__modal-btn.cancel:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+/* Confirm (Delete) Button Style */
+.po-overview__modal-btn.confirm {
+  background-color: #dc3545; /* Standard danger red */
+  color: white;
+  border-color: #dc3545;
+}
+
+.po-overview__modal-btn.confirm:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
